@@ -76,7 +76,7 @@ def excelWriter(core1, sheet, rowIndecies, sheetNames, failedIndex, endVal, sele
         recoveryFile.close()
         end = time.time()
 
-        #Impacient programmer pacifier 
+        #Impatient programmer pacifier 
         #Change the counter % [Some number] to change number of statements printed
         if (counter % 1 == 0 or counter == 1 or counter == endVal - 1): 
             print("Running ", counter, " of ", endVal - 1, " in NASDAQ ", "| Time Elapsed: ", str(datetime.timedelta(seconds = round(end - start))), \
@@ -102,7 +102,7 @@ def dataSplitter(input):
     #ISR contains PE, Forward PE, PE to SP500, MarketCAP(B/T), Dividend, Shares Shorted, Percent Insiders, 
     #Percent Institutions, Beta, Peg Ratio, 52wk h/l, Avg daily shares traded {Additional Definitions at Bottom}
     # numericalDataProcessor(input)
-    
+
     secondaryRetSet = list()
     highlow = findBackNumber(input[:indexLoc(input, 'Currency:')], 0 , True)
     secondaryRetSet.append(highlow)
