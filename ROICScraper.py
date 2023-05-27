@@ -7,6 +7,8 @@ import time
 import ExcelProcessor
 import datetime
 
+recoveryMode = False
+
 def main():
     start = time.time()
     print("Starting program...")
@@ -22,23 +24,23 @@ def main():
     sheetNames = core1.sheetnames
     #rowIndecies = [3] * (len(sheetNames) - 1) #Uncomment this for regular functionality from beginning
     rowIndecies = [383, 1014, 512, 33, 27, 74, 53, 535, 77, 47, 726, 15, 190] #Recovery? -> Use this one
-    # core = core1.active
     genXlSheets(nasdaqName, coreName) #It's the same for both.
     failedIndex = 591 #Recovery? -> Change this from 2
     startIndexNasdaq = 4238 #In event of recovery, change this from 2
     startIndexNYSE = 2 #Recovery? -> Change this from 2
     #NASDAQ
-    rowIndecies,failedIndex = excelWriter(core1, nasdaq, rowIndecies, sheetNames, failedIndex, 4, 1, startIndexNasdaq) #4659
+    rowIndecies,failedIndex = excelWriter(core1, nasdaq, rowIndecies, sheetNames, failedIndex, 4659, 1, startIndexNasdaq, start) #4659
     #NYSE
-    #rowIndecies,failedIndex = excelWriter(core1, nyse, rowIndecies, sheetNames, failedIndex, 4, 2, startIndexNYSE) #2949
+    #rowIndecies,failedIndex = excelWriter(core1, nyse, rowIndecies, sheetNames, failedIndex, 2949, 2, startIndexNYSE, start) #2949
     end = time.time()
     elapsed = round(end - start)
     print("Time elapsed: ", str(datetime.timedelta(seconds = elapsed)))
     print(rowIndecies)
 
-def excelWriter(core1, sheet, rowIndecies, sheetNames, failedIndex, endVal, selectorBit, startIndex):
+def excelWriter(core1, sheet, rowIndecies, sheetNames, failedIndex, endVal, selectorBit, startIndex, processStartTime):
     counter = startIndex - 2;
     for row in sheet.iter_rows(startIndex, endVal): #Replace with 4659 for all
+        start = time.time()
         ticker, name, country, ipoyr, currSheet, industry = row[0].value, row[1].value, row[6].value, row[7].value, row[9].value, row[10].value
         processed = dataCollect(ticker)
         if processed.__contains__('500: Internal Server Error') and len(processed) < 100:
@@ -73,10 +75,15 @@ def excelWriter(core1, sheet, rowIndecies, sheetNames, failedIndex, endVal, sele
         recoveryFile.write("Last successful Ticker: " + str(ticker) + "\n")
         recoveryFile.write("Current Exchange: NASDAQ") if selectorBit == 1 else recoveryFile.write("Current Exchange: NYSE")
         recoveryFile.close()
+        end = time.time()
 
         #Impacient programmer pacifier 
-        if (counter % 2 == 0 or counter == 1 or counter == endVal - 1): 
-            print("Running ", counter, " of ", endVal - 1, " in NASDAQ") if selectorBit == 1 else print("Running ", counter, " of ", endVal - 1, " in NYSE")
+        #Change the counter % [Some number] to change number of statements printed
+        if (counter % 1 == 0 or counter == 1 or counter == endVal - 1): 
+            print("Running ", counter, " of ", endVal - 1, " in NASDAQ ", "| Time Elapsed: ", str(datetime.timedelta(seconds = round(end - start))), \
+            " | Cumulative Time Elapsed", str(datetime.timedelta(seconds = round(end - processStartTime)))) \
+            if selectorBit == 1 else print("Running ", counter, " of ", endVal - 1, " in NYSE ", "| Time Elapsed: ", str(datetime.timedelta(seconds = round(end - start))), \
+            " | Cumulative Time Elapsed", str(datetime.timedelta(seconds = round(end - processStartTime))))
     print("NASDAQ Complete \n") if selectorBit == 1 else print("NYSE Complete \n")
     return rowIndecies, failedIndex
 
@@ -169,6 +176,8 @@ def findBackNumber(input, offset, disableDots):
     dotcounter = 0
     for i in range(len(input) - 1, -1, -1):
         # print('\n XX' + input[i])
+        approvedCharacters = {'-', ',', '%', ' ', '/', '(', ')'}
+        # if(input[i].isnumeric() or offset > 0 or input[i] in approvedCharacters):
         if(input[i].isnumeric() or offset > 0 or input[i] == '-' or input[i] == ','  or input[i] == '%' or input[i] == ' ' or input[i] == '/' or input[i] == '(' or input[i] == ')'):
             returnVal = input[i] + returnVal
             if (input[i] != '-' and input[i] != ',' and input[i]!= '%' and input[i]!= ' '):
