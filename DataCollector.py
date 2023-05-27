@@ -13,6 +13,7 @@ recoveryIndecies = [424, 1101, 564, 40, 29, 88, 59, 596, 87, 52, 799, 17, 212]
 recoveryFileName = "May23RawData CompleteBackup Nasdaq.xlsx"
 recoveryFailureIndex = 631
 nasdaqRecoveryIndex = 4238
+testModeStocks = 5
 nyseRecoveryIndex = 2
 customVersionNumber = 8
 
@@ -47,8 +48,8 @@ def main():
     print("Total Time Elapsed: ", str(datetime.timedelta(seconds = elapsed)))
 
 def startupSequence():
-    numNasdaqStocks = 5 if nasdaqTestMode else 4659
-    numNYSEStocks = 5 if nyseTestMode else 2949
+    numNasdaqStocks = testModeStocks if nasdaqTestMode else 4659
+    numNYSEStocks = testModeStocks if nyseTestMode else 2949
     year, month, day = str(datetime.date.today()).split('-')
     recoveryFile = open('Recovery.txt')
     recoveryLines = recoveryFile.readlines()
