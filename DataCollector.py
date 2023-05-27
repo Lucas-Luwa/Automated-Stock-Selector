@@ -8,23 +8,33 @@ import datetime
 import calendar
 
 #Modify Toggles 
-nasdaqActive, nyseActive, recoveryMode, nasdaqTestMode, nyseTestMode  = False, True, False, False, False
+nasdaqActive, nyseActive, recoveryMode, nasdaqTestMode, nyseTestMode, manualResetVerNum  = True, False, False, True, True, False
 recoveryIndecies = [424, 1101, 564, 40, 29, 88, 59, 596, 87, 52, 799, 17, 212]
 recoveryFileName = "May23RawData CompleteBackup Nasdaq.xlsx"
 recoveryFailureIndex = 631
 nasdaqRecoveryIndex = 4238
 nyseRecoveryIndex = 2
+customVersionNumber = 8
 
+#Startup 
 numNasdaqStocks = 5 if nasdaqTestMode else 4659
 numNYSEStocks = 5 if nyseTestMode else 2949
-#Month year update
+year, month, day = str(datetime.date.today()).split('-')
+recoveryFile = open('Recovery.txt')
+recoveryLines = recoveryFile.readlines()
+versionNumber = 0
+if len(recoveryLines) == 7:
+    existingMonthYear = recoveryLines[4].split(" ")
+    existingVersionNum = recoveryLines[5].split(" ")
+    if not manualResetVerNum: versionNumber = int(existingVersionNum[1]) + 1 if (str(calendar.month_name[int(month)] + str(year))) == str(existingMonthYear[1]).strip() else 0
+    else: versionNumber = 8
 
 def main():
     start = time.time()
     print("Starting program...")
-    nasdaqName = "NASDAQ2.4.23.xlsx"
-    nyseData = "NYSE5.26.23.xlsx"
-    coreName = "P1MasterTemplate5.26.23.xlsx"  if not recoveryMode and nasdaqActive else recoveryFileName
+    nasdaqName = "CoreExcelFiles/NASDAQ2.4.23.xlsx"
+    nyseData = "CoreExcelFiles/NYSE5.26.23.xlsx"
+    coreName = "CoreExcelFiles/P1MasterTemplate5.26.23.xlsx"  if not recoveryMode and nasdaqActive else recoveryFileName
     nasdaq1 = openpyxl.load_workbook(nasdaqName)
     nyse1 = openpyxl.load_workbook(nyseData)
     core1 = openpyxl.load_workbook(coreName)
@@ -42,13 +52,19 @@ def main():
 
     if nasdaqActive: rowIndecies, failedIndex = excelWriter(core1, nasdaq, rowIndecies, sheetNames, failedIndex, numNasdaqStocks, 1, startIndexNasdaq, start)
     if nyseActive: rowIndecies, failedIndex = excelWriter(core1, nyse, rowIndecies, sheetNames, failedIndex, numNYSEStocks, 2, startIndexNYSE, start)
+    recoveryFile = open("Recovery.txt","a")
+    recoveryFile.write("\nMonth/Year: "+ str(calendar.month_name[int(month)] + str(year)))
+    recoveryFile.write("\nVersionNumber: "+ str(versionNumber))
+    recoveryFile.write("\nUpdated: "+ str(datetime.date.today()))
+    recoveryFile.close()
+
     end = time.time()
     elapsed = round(end - start)
     print("Total Time Elapsed: ", str(datetime.timedelta(seconds = elapsed)))
 
 def excelWriter(core1, sheet, rowIndecies, sheetNames, failedIndex, endVal, selectorBit, startIndex, processStartTime):
     counter = startIndex - 2;
-    for row in sheet.iter_rows(startIndex, endVal): #Replace with 4659 for all
+    for row in sheet.iter_rows(startIndex, endVal):
         start = time.time()
         ticker, name, country, ipoyr, currSheet, industry = row[0].value, row[1].value, row[6].value, row[7].value, row[9].value, row[10].value
         processed = dataCollect(ticker)
@@ -79,8 +95,8 @@ def excelWriter(core1, sheet, rowIndecies, sheetNames, failedIndex, endVal, sele
 
         #System Error Recovery
         recoveryFile = open("Recovery.txt","w")
-        recoveryFile.write("These are the rowIndecies: " + str(rowIndecies) + "\n")
-        recoveryFile.write("This is the current failedIndex: " + str(failedIndex) + "\n")
+        recoveryFile.write("rowIndecies: " + str(rowIndecies) + "\n")
+        recoveryFile.write("failedIndex: " + str(failedIndex) + "\n")
         recoveryFile.write("Last successful Ticker: " + str(ticker) + "\n")
         recoveryFile.write("Current Exchange: NASDAQ") if selectorBit == 1 else recoveryFile.write("Current Exchange: NYSE")
         recoveryFile.close()

@@ -1,3 +1,7 @@
-This are the rowIndecies: [6, 3, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
-This is the current failedIndex: 4
-Last successful Ticker: AAC
+rowIndecies: [3, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
+failedIndex: 4
+Last successful Ticker: AADI
+Current Exchange: NASDAQ
+Month/Year: May2023
+VersionNumber: 0
+Updated: 2023-05-27
