@@ -24,9 +24,9 @@ def main():
     genXlSheets(nasdaqName, coreName) #It's the same for both.
     failedIndex = 2
     #NASDAQ
-    rowIndecies,failedIndex = excelWriter(core1, nasdaq, rowIndecies, sheetNames, failedIndex, 3, 1) #4659
+    rowIndecies,failedIndex = excelWriter(core1, nasdaq, rowIndecies, sheetNames, failedIndex, 4659, 1) #4659
     #NYSE
-    rowIndecies,failedIndex = excelWriter(core1, nyse, rowIndecies, sheetNames, failedIndex, 3, 2) #2949
+    rowIndecies,failedIndex = excelWriter(core1, nyse, rowIndecies, sheetNames, failedIndex, 2949, 2) #2949
     end = time.time()
     elapsed = round(end - start)
     print("Time elapsed: ", str(datetime.timedelta(seconds = elapsed)))
@@ -63,7 +63,7 @@ def excelWriter(core1, sheet, rowIndecies, sheetNames, failedIndex, endVal, sele
         counter += 1
 
         #Impacient programmer pacifier 
-        if (counter % 5 == 0 or counter == 1 or counter == endVal - 1): 
+        if (counter % 2 == 0 or counter == 1 or counter == endVal - 1): 
             print("Running ", counter, " of ", endVal - 1, " in NASDAQ") if selectorBit == 1 else print("Running ", counter, " of ", endVal - 1, " in NYSE")
     print("NASDAQ Complete \n") if selectorBit == 1 else print("NYSE Complete \n")
     return rowIndecies, failedIndex
