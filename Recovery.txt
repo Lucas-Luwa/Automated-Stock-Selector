@@ -3,5 +3,5 @@ failedIndex: 4
 Last successful Ticker: AADI
 Current Exchange: NASDAQ
 Month/Year: May2023
-VersionNumber: 0
+VersionNumber: 1
 Updated: 2023-05-27
