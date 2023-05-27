@@ -4,12 +4,13 @@ import time
 from bs4 import BeautifulSoup
 import openpyxl
 import time
-import ExcelProcessor
 import datetime
+import calendar
 
 #Modify Toggles 
 nasdaqActive, nyseActive, recoveryMode, nasdaqTestMode, nyseTestMode  = False, True, False, False, False
 recoveryIndecies = [424, 1101, 564, 40, 29, 88, 59, 596, 87, 52, 799, 17, 212]
+recoveryFileName = "May23RawData CompleteBackup Nasdaq.xlsx"
 recoveryFailureIndex = 631
 nasdaqRecoveryIndex = 4238
 nyseRecoveryIndex = 2
@@ -21,9 +22,9 @@ numNYSEStocks = 5 if nyseTestMode else 2949
 def main():
     start = time.time()
     print("Starting program...")
-    nasdaqName = "NASDAQ Ticker 2.4.23.xlsx"
-    nyseData = "NYSE Ticker 5.26.23.xlsx"
-    coreName = "MasterTemplate Updated May 2023.xlsx"  if not recoveryMode and nasdaqActive else "May23RawData CompleteBackup Nasdaq.xlsx"
+    nasdaqName = "NASDAQ2.4.23.xlsx"
+    nyseData = "NYSE5.26.23.xlsx"
+    coreName = "P1MasterTemplate5.26.23.xlsx"  if not recoveryMode and nasdaqActive else recoveryFileName
     nasdaq1 = openpyxl.load_workbook(nasdaqName)
     nyse1 = openpyxl.load_workbook(nyseData)
     core1 = openpyxl.load_workbook(coreName)
@@ -78,7 +79,7 @@ def excelWriter(core1, sheet, rowIndecies, sheetNames, failedIndex, endVal, sele
 
         #System Error Recovery
         recoveryFile = open("Recovery.txt","w")
-        recoveryFile.write("This are the rowIndecies: " + str(rowIndecies) + "\n")
+        recoveryFile.write("These are the rowIndecies: " + str(rowIndecies) + "\n")
         recoveryFile.write("This is the current failedIndex: " + str(failedIndex) + "\n")
         recoveryFile.write("Last successful Ticker: " + str(ticker) + "\n")
         recoveryFile.write("Current Exchange: NASDAQ") if selectorBit == 1 else recoveryFile.write("Current Exchange: NYSE")

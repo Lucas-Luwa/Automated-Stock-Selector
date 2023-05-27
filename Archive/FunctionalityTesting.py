@@ -1,3 +1,5 @@
+from datetime import date
+import calendar
 #Received an error on NASDAQ 4238 on Truecar (TRUE)
 input = True
 url = "https://roic.ai/company/" + str(input) #Cast it.
@@ -7,7 +9,7 @@ print(url)
 input = "this is lucas-luwa's first test. I like hiking, investing and /playing tennis. ()%"
 approvedCharacters = {'-', ',', '%', ' ', '/', '(', ')'}
 offset = 0
-#Works on 5.27.23
+#Works on 5.27.23 
 for i in range(0, len(input)-1):
     if (input[i].isnumeric() or offset > 0 or input[i] == '-' or input[i] == ','  or input[i] == '%' or input[i] == ' ' or input[i] == '/' or input[i] == '(' or input[i] == ')'): 
         print("OLDTRUE")
@@ -19,4 +21,8 @@ for i in range(0, len(input)-1):
         print("NEWFALSE")
     print("")
 
+#Testing for new naming convention
+year, month, day = str(date.today()).split('-')
+print(year,calendar.month_name[int(month)], day)
+print(str(calendar.month_name[int(month)]) + str(year) + "RawDataV")
 
