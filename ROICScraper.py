@@ -24,9 +24,9 @@ def main():
     genXlSheets(nasdaqName, coreName) #It's the same for both.
     failedIndex = 2
     #NASDAQ
-    rowIndecies,failedIndex = excelWriter(core1, nasdaq, rowIndecies, sheetNames, failedIndex, 4659, 1) #4659
+    rowIndecies,failedIndex = excelWriter(core1, nasdaq, rowIndecies, sheetNames, failedIndex, 4, 1) #4659
     #NYSE
-    rowIndecies,failedIndex = excelWriter(core1, nyse, rowIndecies, sheetNames, failedIndex, 2949, 2) #2949
+    rowIndecies,failedIndex = excelWriter(core1, nyse, rowIndecies, sheetNames, failedIndex, 4, 2) #2949
     end = time.time()
     elapsed = round(end - start)
     print("Time elapsed: ", str(datetime.timedelta(seconds = elapsed)))
@@ -61,6 +61,13 @@ def excelWriter(core1, sheet, rowIndecies, sheetNames, failedIndex, endVal, sele
             rowIndecies[sheetIndex] += 1
             core1.save("May23RawData.xlsx")
         counter += 1
+
+        #System Error Recovery
+        recoveryFile = open("Recovery.txt","w")
+        recoveryFile.write("This are the rowIndecies: " + str(rowIndecies) + "\n")
+        recoveryFile.write("This is the current failedIndex: " + str(failedIndex) + "\n")
+        recoveryFile.write("Last successful Ticker: " + str(ticker))
+        recoveryFile.close()
 
         #Impacient programmer pacifier 
         if (counter % 2 == 0 or counter == 1 or counter == endVal - 1): 
@@ -119,7 +126,7 @@ def dataSplitter(input):
 
 
 def dataCollect(input):
-    url = "https://roic.ai/company/" + input
+    url = "https://roic.ai/company/" + str(input)
     
     response = requests.get(url)
     contents = BeautifulSoup(response.text, 'html.parser')
