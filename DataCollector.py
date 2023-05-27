@@ -16,21 +16,10 @@ nasdaqRecoveryIndex = 4238
 nyseRecoveryIndex = 2
 customVersionNumber = 8
 
-#Startup 
-numNasdaqStocks = 5 if nasdaqTestMode else 4659
-numNYSEStocks = 5 if nyseTestMode else 2949
-year, month, day = str(datetime.date.today()).split('-')
-recoveryFile = open('Recovery.txt')
-recoveryLines = recoveryFile.readlines()
-versionNumber = 0
-if len(recoveryLines) == 7:
-    existingMonthYear = recoveryLines[4].split(" ")
-    existingVersionNum = recoveryLines[5].split(" ")
-    if not manualResetVerNum: versionNumber = int(existingVersionNum[1]) + 1 if (str(calendar.month_name[int(month)] + str(year))) == str(existingMonthYear[1]).strip() else 0
-    else: versionNumber = 8
-
 def main():
-    start = time.time()
+    global start, sheetNames, core1, newFileName
+    start = time.time() 
+    numNasdaqStocks, numNYSEStocks, versionNumber, year, month = startupSequence()
     print("Starting program...")
     nasdaqName = "CoreExcelFiles/NASDAQ2.4.23.xlsx"
     nyseData = "CoreExcelFiles/NYSE5.26.23.xlsx"
@@ -41,28 +30,45 @@ def main():
     nasdaq = nasdaq1.active
     nyse = nyse1.active
     sheetNames = core1.sheetnames
-    #Remember to replace recovery values with your own values (Applies if nasdaq is deactivated as well)
     rowIndecies = [3] * (len(sheetNames) - 1) if not recoveryMode and nasdaqActive else recoveryIndecies
     genXlSheets(nasdaqName, coreName) #It's the same for both.
 
-    #Change the following values for recovery mode.
     failedIndex = 2 if not recoveryMode and nasdaqActive else recoveryFailureIndex
     startIndexNasdaq = 2 if not recoveryMode else nasdaqRecoveryIndex
     startIndexNYSE = 2 if not recoveryMode else nyseRecoveryIndex
-
-    if nasdaqActive: rowIndecies, failedIndex = excelWriter(core1, nasdaq, rowIndecies, sheetNames, failedIndex, numNasdaqStocks, 1, startIndexNasdaq, start)
-    if nyseActive: rowIndecies, failedIndex = excelWriter(core1, nyse, rowIndecies, sheetNames, failedIndex, numNYSEStocks, 2, startIndexNYSE, start)
-    recoveryFile = open("Recovery.txt","a")
-    recoveryFile.write("\nMonth/Year: "+ str(calendar.month_name[int(month)] + str(year)))
-    recoveryFile.write("\nVersionNumber: "+ str(versionNumber))
-    recoveryFile.write("\nUpdated: "+ str(datetime.date.today()))
-    recoveryFile.close()
+    
+    newFileName = str(calendar.month_name[int(month)]) + str(year) + "RawDataV" + str(versionNumber) + ".xlsx"
+    if nasdaqActive: rowIndecies, failedIndex = excelWriter(nasdaq, rowIndecies, failedIndex, numNasdaqStocks, 1, startIndexNasdaq)
+    if nyseActive: rowIndecies, failedIndex = excelWriter(nyse, rowIndecies, failedIndex, numNYSEStocks, 2, startIndexNYSE)
+    versionUpdate(month, year, versionNumber)
 
     end = time.time()
     elapsed = round(end - start)
     print("Total Time Elapsed: ", str(datetime.timedelta(seconds = elapsed)))
 
-def excelWriter(core1, sheet, rowIndecies, sheetNames, failedIndex, endVal, selectorBit, startIndex, processStartTime):
+def startupSequence():
+    numNasdaqStocks = 5 if nasdaqTestMode else 4659
+    numNYSEStocks = 5 if nyseTestMode else 2949
+    year, month, day = str(datetime.date.today()).split('-')
+    recoveryFile = open('Recovery.txt')
+    recoveryLines = recoveryFile.readlines()
+    versionNumber = 0
+    if len(recoveryLines) == 7:
+        existingMonthYear = recoveryLines[4].split(" ")
+        existingVersionNum = recoveryLines[5].split(" ")
+        if not manualResetVerNum: versionNumber = int(existingVersionNum[1]) + 1 if (str(calendar.month_name[int(month)] + str(year))) == str(existingMonthYear[1]).strip() else 0
+        else: versionNumber = 8
+    return numNasdaqStocks, numNYSEStocks, versionNumber, year, month
+
+def versionUpdate(month, year, versionNumber):
+    recoveryFile = open("Recovery.txt","a")
+    recoveryFile.write("\nMonth/Year: "+ str(calendar.month_name[int(month)]) + str(year))
+    recoveryFile.write("\nVersionNumber: "+ str(versionNumber))
+    recoveryFile.write("\nUpdated: "+ str(datetime.date.today()))
+    recoveryFile.close()
+
+
+def excelWriter(sheet, rowIndecies, failedIndex, endVal, selectorBit, startIndex):
     counter = startIndex - 2;
     for row in sheet.iter_rows(startIndex, endVal):
         start = time.time()
@@ -90,7 +96,7 @@ def excelWriter(core1, sheet, rowIndecies, sheetNames, failedIndex, endVal, sele
                 if i > (5 + len(Series1) + len(Series2)) and i <= (5 + len(Series1) + len(Series2) + len(Series3)): tempWorksheet.cell(row = rowIndecies[sheetIndex], column = i).value = Series3[i - 6 - len(Series1) - len(Series2)]
 
             rowIndecies[sheetIndex] += 1
-            core1.save("May23RawData.xlsx")
+            core1.save(newFileName)
         counter += 1
 
         #System Error Recovery
@@ -106,9 +112,9 @@ def excelWriter(core1, sheet, rowIndecies, sheetNames, failedIndex, endVal, sele
         #Change the counter % [Some number] to change number of statements printed
         if (counter % 1 == 0 or counter == 1 or counter == endVal - 1): 
             print("Running ", counter, " of ", endVal - 1, " in NASDAQ ", "| Time Elapsed: ", str(datetime.timedelta(seconds = round(end - start))), \
-            " | Cumulative Time Elapsed", str(datetime.timedelta(seconds = round(end - processStartTime)))) \
+            " | Cumulative Time Elapsed", str(datetime.timedelta(seconds = round(end - start)))) \
             if selectorBit == 1 else print("Running ", counter, " of ", endVal - 1, " in NYSE ", "| Time Elapsed: ", str(datetime.timedelta(seconds = round(end - start))), \
-            " | Cumulative Time Elapsed", str(datetime.timedelta(seconds = round(end - processStartTime))))
+            " | Cumulative Time Elapsed", str(datetime.timedelta(seconds = round(end - start))))
     print("NASDAQ Complete \n") if selectorBit == 1 else print("NYSE Complete \n")
     return rowIndecies, failedIndex
 
