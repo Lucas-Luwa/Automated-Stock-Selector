@@ -12,7 +12,8 @@ def main():
     print("Starting program...")
     nasdaqName = "NASDAQ Ticker 2.4.23.xlsx"
     nyseData = "NYSE Ticker 5.26.23.xlsx"
-    coreName = "MasterTemplate Updated May 2023.xlsx"
+    #coreName = "MasterTemplate Updated May 2023.xlsx" 
+    coreName = "May23RawData Recovery1 5.27.23.xlsx"
     nasdaq1 = openpyxl.load_workbook(nasdaqName)
     nyse1 = openpyxl.load_workbook(nyseData)
     core1 = openpyxl.load_workbook(coreName)
@@ -29,7 +30,7 @@ def main():
     #NASDAQ
     rowIndecies,failedIndex = excelWriter(core1, nasdaq, rowIndecies, sheetNames, failedIndex, 4, 1. startIndexNasdaq) #4659
     #NYSE
-    rowIndecies,failedIndex = excelWriter(core1, nyse, rowIndecies, sheetNames, failedIndex, 4, 2, startIndexNYSE) #2949
+    #rowIndecies,failedIndex = excelWriter(core1, nyse, rowIndecies, sheetNames, failedIndex, 4, 2, startIndexNYSE) #2949
     end = time.time()
     elapsed = round(end - start)
     print("Time elapsed: ", str(datetime.timedelta(seconds = elapsed)))
@@ -69,7 +70,8 @@ def excelWriter(core1, sheet, rowIndecies, sheetNames, failedIndex, endVal, sele
         recoveryFile = open("Recovery.txt","w")
         recoveryFile.write("This are the rowIndecies: " + str(rowIndecies) + "\n")
         recoveryFile.write("This is the current failedIndex: " + str(failedIndex) + "\n")
-        recoveryFile.write("Last successful Ticker: " + str(ticker))
+        recoveryFile.write("Last successful Ticker: " + str(ticker) + "\n")
+        recoveryFile.write("Current Exchange: NASDAQ") if selectorBit == 1 else recoveryFile.write("Current Exchange: NYSE")
         recoveryFile.close()
 
         #Impacient programmer pacifier 
