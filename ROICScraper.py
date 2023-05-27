@@ -14,7 +14,7 @@ def main():
     print("Starting program...")
     nasdaqName = "NASDAQ Ticker 2.4.23.xlsx"
     nyseData = "NYSE Ticker 5.26.23.xlsx"
-    coreName = "MasterTemplate Updated May 2023.xlsx"  if not recoveryMode else "May23RawData Recovery1 5.27.23.xlsx"
+    coreName = "MasterTemplate Updated May 2023.xlsx"  if not recoveryMode and nasdaqActive else "May23RawData CompleteBackup Nasdaq.xlsx"
     nasdaq1 = openpyxl.load_workbook(nasdaqName)
     nyse1 = openpyxl.load_workbook(nyseData)
     core1 = openpyxl.load_workbook(coreName)
@@ -22,16 +22,16 @@ def main():
     nyse = nyse1.active
     sheetNames = core1.sheetnames
     #Remember to replace recovery values with your own values (Applies if nasdaq is deactivated as well)
-    rowIndecies = [3] * (len(sheetNames) - 1) if not recoveryMode and nasdaqActive else [383, 1014, 512, 33, 27, 74, 53, 535, 77, 47, 726, 15, 190]
+    rowIndecies = [3] * (len(sheetNames) - 1) if not recoveryMode and nasdaqActive else [424, 1101, 564, 40, 29, 88, 59, 596, 87, 52, 799, 17, 212]
     genXlSheets(nasdaqName, coreName) #It's the same for both.
 
     #Change the following values for recovery mode.
-    failedIndex = 2 if not recoveryMode else 591
+    failedIndex = 2 if not recoveryMode and nasdaqActive else 631
     startIndexNasdaq = 2 if not recoveryMode else 4238
     startIndexNYSE = 2 if not recoveryMode else 2
 
-    if nasdaqActive: rowIndecies, failedIndex = excelWriter(core1, nasdaq, rowIndecies, sheetNames, failedIndex, 3, 1, startIndexNasdaq, start) #4659
-    if nyseActive: rowIndecies, failedIndex = excelWriter(core1, nyse, rowIndecies, sheetNames, failedIndex, 3, 2, startIndexNYSE, start) #2949
+    if nasdaqActive: rowIndecies, failedIndex = excelWriter(core1, nasdaq, rowIndecies, sheetNames, failedIndex, 4659, 1, startIndexNasdaq, start) #4659
+    if nyseActive: rowIndecies, failedIndex = excelWriter(core1, nyse, rowIndecies, sheetNames, failedIndex, 2949, 2, startIndexNYSE, start) #2949
     end = time.time()
     elapsed = round(end - start)
     print("Total Time Elapsed: ", str(datetime.timedelta(seconds = elapsed)))
