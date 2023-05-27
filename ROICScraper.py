@@ -98,9 +98,11 @@ def dataSplitter(input):
         initialSetRet.append(currVal)
         input = input[(indexLoc(input, delimiters[i])+inputoffset[i]):]
     input = input[indexLoc(input, 'linearHighLow'):] # Discard useless data prior to this point
+
     #ISR contains PE, Forward PE, PE to SP500, MarketCAP(B/T), Dividend, Shares Shorted, Percent Insiders, 
     #Percent Institutions, Beta, Peg Ratio, 52wk h/l, Avg daily shares traded {Additional Definitions at Bottom}
     # numericalDataProcessor(input)
+    
     secondaryRetSet = list()
     highlow = findBackNumber(input[:indexLoc(input, 'Currency:')], 0 , True)
     secondaryRetSet.append(highlow)
@@ -117,7 +119,7 @@ def dataSplitter(input):
         secondaryRetSet.append(currVal)
         input = input[(indexLoc(input, delimiters2[i])+inputoffset2[i]):]
     input = input[indexLoc(input, 'Total liabilities'):]# Discard useless data prior to this point
-    # print(input)
+
     #highlow, yrs, Revenue Per Share, Earnings Per Share, FCF Per Share, Dividends, Capex, Book Value/Share, PE Ratio, PE-500, DivYield
     #Revenue, Operating Margin, Net Profit, Net Profit Margin, Equity, ROIC
 
@@ -176,8 +178,7 @@ def findBackNumber(input, offset, disableDots):
     for i in range(len(input) - 1, -1, -1):
         # print('\n XX' + input[i])
         approvedCharacters = {'-', ',', '%', ' ', '/', '(', ')'}
-        # if(input[i].isnumeric() or offset > 0 or input[i] in approvedCharacters):
-        if(input[i].isnumeric() or offset > 0 or input[i] == '-' or input[i] == ','  or input[i] == '%' or input[i] == ' ' or input[i] == '/' or input[i] == '(' or input[i] == ')'):
+        if(input[i].isnumeric() or offset > 0 or input[i] in approvedCharacters):
             returnVal = input[i] + returnVal
             if (input[i] != '-' and input[i] != ',' and input[i]!= '%' and input[i]!= ' '):
                 offset -= 1
