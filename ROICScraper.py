@@ -19,22 +19,25 @@ def main():
     nasdaq = nasdaq1.active
     nyse = nyse1.active
     sheetNames = core1.sheetnames
-    rowIndecies = [3] * len(sheetNames)
+    #rowIndecies = [3] * (len(sheetNames) - 1) #Uncomment this for regular functionality from beginning
+    rowIndecies = [383, 1014, 512, 33, 27, 74, 53, 535, 77, 47, 726, 15, 190] #Recovery? -> Use this one
     # core = core1.active
     genXlSheets(nasdaqName, coreName) #It's the same for both.
-    failedIndex = 2
+    failedIndex = 591 #Recovery? -> Change this from 2
+    startIndexNasdaq = 4238 #In event of recovery, change this from 2
+    startIndexNYSE = 2 #Recovery? -> Change this from 2
     #NASDAQ
-    rowIndecies,failedIndex = excelWriter(core1, nasdaq, rowIndecies, sheetNames, failedIndex, 4, 1) #4659
+    rowIndecies,failedIndex = excelWriter(core1, nasdaq, rowIndecies, sheetNames, failedIndex, 4, 1. startIndexNasdaq) #4659
     #NYSE
-    rowIndecies,failedIndex = excelWriter(core1, nyse, rowIndecies, sheetNames, failedIndex, 4, 2) #2949
+    rowIndecies,failedIndex = excelWriter(core1, nyse, rowIndecies, sheetNames, failedIndex, 4, 2, startIndexNYSE) #2949
     end = time.time()
     elapsed = round(end - start)
     print("Time elapsed: ", str(datetime.timedelta(seconds = elapsed)))
     print(rowIndecies)
 
-def excelWriter(core1, sheet, rowIndecies, sheetNames, failedIndex, endVal, selectorBit):
-    counter = 0;
-    for row in sheet.iter_rows(2, endVal): #Replace with 4659 for all
+def excelWriter(core1, sheet, rowIndecies, sheetNames, failedIndex, endVal, selectorBit, startIndex):
+    counter = startIndex - 2;
+    for row in sheet.iter_rows(startIndex, endVal): #Replace with 4659 for all
         ticker, name, country, ipoyr, currSheet, industry = row[0].value, row[1].value, row[6].value, row[7].value, row[9].value, row[10].value
         processed = dataCollect(ticker)
         if processed.__contains__('500: Internal Server Error') and len(processed) < 100:
