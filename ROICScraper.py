@@ -28,7 +28,7 @@ def main():
     startIndexNasdaq = 4238 #In event of recovery, change this from 2
     startIndexNYSE = 2 #Recovery? -> Change this from 2
     #NASDAQ
-    rowIndecies,failedIndex = excelWriter(core1, nasdaq, rowIndecies, sheetNames, failedIndex, 4, 1. startIndexNasdaq) #4659
+    rowIndecies,failedIndex = excelWriter(core1, nasdaq, rowIndecies, sheetNames, failedIndex, 4, 1, startIndexNasdaq) #4659
     #NYSE
     #rowIndecies,failedIndex = excelWriter(core1, nyse, rowIndecies, sheetNames, failedIndex, 4, 2, startIndexNYSE) #2949
     end = time.time()
