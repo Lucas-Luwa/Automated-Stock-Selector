@@ -7,7 +7,16 @@ import time
 import ExcelProcessor
 import datetime
 
-nasdaqActive, nyseActive, recoveryMode = False, True, False
+#Modify Toggles 
+nasdaqActive, nyseActive, recoveryMode, nasdaqTestMode, nyseTestMode  = False, True, False, False, False
+recoveryIndecies = [424, 1101, 564, 40, 29, 88, 59, 596, 87, 52, 799, 17, 212]
+recoveryFailureIndex = 631
+nasdaqRecoveryIndex = 4238
+nyseRecoveryIndex = 2
+
+numNasdaqStocks = 5 if nasdaqTestMode else 4659
+numNYSEStocks = 5 if nyseTestMode else 2949
+#Month year update
 
 def main():
     start = time.time()
@@ -22,16 +31,16 @@ def main():
     nyse = nyse1.active
     sheetNames = core1.sheetnames
     #Remember to replace recovery values with your own values (Applies if nasdaq is deactivated as well)
-    rowIndecies = [3] * (len(sheetNames) - 1) if not recoveryMode and nasdaqActive else [424, 1101, 564, 40, 29, 88, 59, 596, 87, 52, 799, 17, 212]
+    rowIndecies = [3] * (len(sheetNames) - 1) if not recoveryMode and nasdaqActive else recoveryIndecies
     genXlSheets(nasdaqName, coreName) #It's the same for both.
 
     #Change the following values for recovery mode.
-    failedIndex = 2 if not recoveryMode and nasdaqActive else 631
-    startIndexNasdaq = 2 if not recoveryMode else 4238
-    startIndexNYSE = 2 if not recoveryMode else 2
+    failedIndex = 2 if not recoveryMode and nasdaqActive else recoveryFailureIndex
+    startIndexNasdaq = 2 if not recoveryMode else nasdaqRecoveryIndex
+    startIndexNYSE = 2 if not recoveryMode else nyseRecoveryIndex
 
-    if nasdaqActive: rowIndecies, failedIndex = excelWriter(core1, nasdaq, rowIndecies, sheetNames, failedIndex, 4659, 1, startIndexNasdaq, start) #4659
-    if nyseActive: rowIndecies, failedIndex = excelWriter(core1, nyse, rowIndecies, sheetNames, failedIndex, 2949, 2, startIndexNYSE, start) #2949
+    if nasdaqActive: rowIndecies, failedIndex = excelWriter(core1, nasdaq, rowIndecies, sheetNames, failedIndex, numNasdaqStocks, 1, startIndexNasdaq, start)
+    if nyseActive: rowIndecies, failedIndex = excelWriter(core1, nyse, rowIndecies, sheetNames, failedIndex, numNYSEStocks, 2, startIndexNYSE, start)
     end = time.time()
     elapsed = round(end - start)
     print("Total Time Elapsed: ", str(datetime.timedelta(seconds = elapsed)))
