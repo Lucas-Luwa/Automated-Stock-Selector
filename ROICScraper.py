@@ -5,8 +5,11 @@ from bs4 import BeautifulSoup
 import openpyxl
 import time
 import ExcelProcessor
+import datetime
 
 def main():
+    start = time.time()
+    print("Starting program...")
     nasdaqName = "NASDAQ Ticker 2.4.23.xlsx"
     nyseData = "NYSE Ticker 5.26.23.xlsx"
     coreName = "MasterTemplate Updated May 2023.xlsx"
@@ -21,11 +24,16 @@ def main():
     genXlSheets(nasdaqName, coreName) #It's the same for both.
     failedIndex = 2
     #NASDAQ
-    excelWriter(core1, nasdaq, rowIndecies, sheetNames, failedIndex, 10, 1)
-    excelWriter(core1, nyse, rowIndecies, sheetNames, failedIndex, 10, 2)
+    rowIndecies,failedIndex = excelWriter(core1, nasdaq, rowIndecies, sheetNames, failedIndex, 3, 1) #4659
+    #NYSE
+    rowIndecies,failedIndex = excelWriter(core1, nyse, rowIndecies, sheetNames, failedIndex, 3, 2) #2949
+    end = time.time()
+    elapsed = round(end - start)
+    print("Time elapsed: ", str(datetime.timedelta(seconds = elapsed)))
     print(rowIndecies)
 
 def excelWriter(core1, sheet, rowIndecies, sheetNames, failedIndex, endVal, selectorBit):
+    counter = 0;
     for row in sheet.iter_rows(2, endVal): #Replace with 4659 for all
         ticker, name, country, ipoyr, currSheet, industry = row[0].value, row[1].value, row[6].value, row[7].value, row[9].value, row[10].value
         processed = dataCollect(ticker)
@@ -51,7 +59,14 @@ def excelWriter(core1, sheet, rowIndecies, sheetNames, failedIndex, endVal, sele
                 if i > (5 + len(Series1) + len(Series2)) and i <= (5 + len(Series1) + len(Series2) + len(Series3)): tempWorksheet.cell(row = rowIndecies[sheetIndex], column = i).value = Series3[i - 6 - len(Series1) - len(Series2)]
 
             rowIndecies[sheetIndex] += 1
-            core1.save("test.xlsx")
+            core1.save("May23RawData.xlsx")
+        counter += 1
+
+        #Impacient programmer pacifier 
+        if (counter % 5 == 0 or counter == 1 or counter == endVal - 1): 
+            print("Running ", counter, " of ", endVal - 1, " in NASDAQ") if selectorBit == 1 else print("Running ", counter, " of ", endVal - 1, " in NYSE")
+    print("NASDAQ Complete \n") if selectorBit == 1 else print("NYSE Complete \n")
+    return rowIndecies, failedIndex
 
 def dataSplitter(input):
     delimiters = ['P/E', 'Forward P/E', 'P/E to S&P500', 'Market CAP', 'Div Yield', '% Held by Insiders', '% Held by Institutions', 
