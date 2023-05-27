@@ -21,14 +21,14 @@ def main():
     nasdaq = nasdaq1.active
     nyse = nyse1.active
     sheetNames = core1.sheetnames
-    #Remember to replace recovery values with your own values
-    rowIndecies = [3] * (len(sheetNames) - 1) if not recoveryMode else rowIndecies = [383, 1014, 512, 33, 27, 74, 53, 535, 77, 47, 726, 15, 190]
+    #Remember to replace recovery values with your own values (Applies if nasdaq is deactivated as well)
+    rowIndecies = [3] * (len(sheetNames) - 1) if not recoveryMode and nasdaqActive else rowIndecies = [383, 1014, 512, 33, 27, 74, 53, 535, 77, 47, 726, 15, 190]
     genXlSheets(nasdaqName, coreName) #It's the same for both.
 
     #Change the following values for recovery mode.
     failedIndex = 2 if not recoveryMode else failedIndex = 591
     startIndexNasdaq = 2 if not recoveryMode else startIndexNasdaq = 4238
-    startIndexNYSE = 2 if not recoveryMode else startIndexNYSE = 27
+    startIndexNYSE = 2 if not recoveryMode else startIndexNYSE = 2
 
     if nasdaqActive: rowIndecies, failedIndex = excelWriter(core1, nasdaq, rowIndecies, sheetNames, failedIndex, 4659, 1, startIndexNasdaq, start) #4659
     if nyseActive: rowIndecies, failedIndex = excelWriter(core1, nyse, rowIndecies, sheetNames, failedIndex, 2949, 2, startIndexNYSE, start) #2949
