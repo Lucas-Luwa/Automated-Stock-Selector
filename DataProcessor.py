@@ -3,6 +3,7 @@ import time
 import datetime
 import calendar
 import os
+import numpy
 
 #Modify Toggles if desired
 wipeCurrVerNum = True
@@ -23,96 +24,136 @@ def main():
     excelWriter()
 
 def excelWriter():
+    global currSheet
     stoppingIndecies = [702, 1220, 1053, 73, 45, 148, 175, 792, 261, 182, 1498, 68, 680]
     counter = 0;
-    for row in rawDataBook['Miscellaneous'].iter_rows(3, 45 - 1):
+    for row in rawDataBook['Miscellaneous'].iter_rows(15, 16):
         currSheet = 'Miscellaneous'
         tempWKST = core1['Miscellaneous']
         sheetIndex = sheetNames.index('Miscellaneous')
-        #TAGS
-        if redFlagsS1(row, currSheet) and redFlagsS2(row) and redFlagsS3(row, currSheet):
-            for i in range(1,6):
-                tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[i - 1].value
-            #SERIES 1
-            for i in range(7, 16):
-                x = i - 2
-                if i >= 8: x += 2
-                if i >= 10: x += 1
-                if i >= 15: i += 1
-                if not i == 14:
-                    tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[x].value
-                else: 
-                    high, low = row[x].value.split('/')
-                    tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = high
-                    tempWKST.cell(row = rowIndecies[sheetIndex], column = i + 1).value = low
-            #SERIES 3
-            counter = 34;
-            for i in range (215, 220):
-                if i == 218: counter += 2
-                tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[counter].value
-                counter += 1
-            rowIndecies[sheetIndex] += 1
-            core1.save("ProcessedSheets\\" + monthYR + "\\" + writeExcelFileName)
+        #Check 1 and 3 first
+        if redFlagsS1(row, currSheet) and redFlagsS3(row, currSheet):
+            continueRunning = True
+            #SERIES 2 - More processing than 1 and 3. We don't wanna perform this twice. Errors handled inside here.
+                #s2Indecies = [18, 17, 19, 20, 25, 27, 28, 29, 30, 31, 33]
+            years, continueRunning = yearProcessing(row, 18)
+            if continueRunning: high, low, continueRunning = highLowValueProcessing(row, 17, years)
+            if continueRunning: 
+                #TAGS
+                for i in range(1,6):
+                    tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[i - 1].value
+                #SERIES 1
+                for i in range(7, 16):
+                    x = i - 2
+                    if i >= 8: x += 2
+                    if i >= 10: x += 1
+                    if i >= 15: i += 1
+                    if not i == 14:
+                        tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[x].value
+                    else: 
+                        high, low = row[x].value.split('/')
+                        tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = high
+                        tempWKST.cell(row = rowIndecies[sheetIndex], column = i + 1).value = low
+                #SERIES 3
+                counter = 34;
+                for i in range (215, 220):
+                    if i == 218: counter += 2
+                    tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[counter].value
+                    counter += 1
+                rowIndecies[sheetIndex] += 1
+                # core1.save("ProcessedSheets\\" + monthYR + "\\" + writeExcelFileName)
+
+def highLowValueProcessing(row, rowIndex, years):
+    errorNum = 15
+    high = low = [-1] * len(years)
+    individualValues = list()
+    additionalSet = ['.']
+    rawNumbers = removeNonNumeric(row[rowIndex].value, additionalSet) 
+    if len(rawNumbers) == 0:
+        return high, low, errorHandler(row, errorNum, currSheet)
+    while len(rawNumbers) > 0:
+        individualValues.append(rawNumbers[0:rawNumbers.index('.') + 3])
+        rawNumbers = rawNumbers[rawNumbers.index('.') + 3:]
+    print(individualValues)
+    for i in range(0, len(individualValues)):
+        if i % 2 == 0:
+        else: 
+    return high, low, True
+
+def yearProcessing(row, rowIndex):
+    errorNum = 14
+    markers = [0] * 18
+    startVal = 2023
+    for i in range(0, 18):
+        if i == 0: markers[i] = 'TTM' in row[rowIndex].value
+        else: 
+            markers[i] = str(startVal) in row[rowIndex].value
+            startVal -= 1
+    if markers.count(1) == 0: 
+        return markers, errorHandler(row, errorNum, currSheet)
+    return markers, True
 
 def redFlagsS1(row, sheetName):
     #41
     #PE, MKTCAP, Share Short, %Insider, %Institution, 52HighLow, DailyTrade - Series 1
     performanceValues = [5, 8, 10, 11, 12, 15, 16] 
+    additionalSet = ['-', '.']
     performanceLength = list()
     errorNum = 0
     for i in performanceValues:
-        performanceLength.append(len(removeNonNumeric(row[i].value)))
-        if i == 5 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there PE
+        performanceLength.append(len(removeNonNumeric(row[i].value, additionalSet)))
+        if i == 5 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there PE
             return errorHandler(row, errorNum, sheetName)
-        if i == 5 and float(removeNonNumeric(row[i].value)) < -100: #PE Over 300
+        if i == 5 and float(removeNonNumeric(row[i].value, additionalSet)) < -100: #PE Over 300
             return errorHandler(row, errorNum + 1, sheetName)
-        if i == 5 and float(removeNonNumeric(row[i].value)) > 300: #PE Under -100
+        if i == 5 and float(removeNonNumeric(row[i].value, additionalSet)) > 300: #PE Under -100
             return errorHandler(row, errorNum + 2, sheetName)
-        if i == 8 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there MKTCAP
+        if i == 8 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there MKTCAP
             return errorHandler(row, errorNum + 3, sheetName)
-        if i == 10 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there SHARE SHORT
+        if i == 10 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there SHARE SHORT
             return errorHandler(row, errorNum + 4, sheetName)
-        if i == 10 and float(removeNonNumeric(row[i].value)) > 20.0: #Short percentage is over 20 percent...
+        if i == 10 and float(removeNonNumeric(row[i].value, additionalSet)) > 20.0: #Short percentage is over 20 percent...
             return errorHandler(row, errorNum + 5, sheetName)
-        if i == 11 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there Percent Insider
+        if i == 11 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there Percent Insider
             return errorHandler(row, errorNum + 6, sheetName)
-        if i == 12 and float(removeNonNumeric(row[i].value)) == 0: #Nothing is there Institution %
+        if i == 12 and float(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there Institution %
             return errorHandler(row, errorNum + 7, sheetName)
-        if i == 15 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there high low
+        if i == 15 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there high low
             return errorHandler(row, errorNum + 8, sheetName)
-        if i == 16 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there daily trade volume
+        if i == 16 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there daily trade volume
             return errorHandler(row, errorNum + 9, sheetName)
         if i == 16 and performanceLength.count(0) >= 6: # 6 or more fields missing in Series
             return errorHandler(row, errorNum + 10, sheetName)
     return True
 
-def redFlagsS2(row):
-    return True
+# def redFlagsS2(row):
+#     return True
 
 # if avg all roic or last 5 avg or last 3 above 2 we good. otherwise eliminated
 #assets less than 1000 eliminated
 def redFlagsS3(row, sheetName):
     performanceValues = [34, 35, 40] 
+    additionalSet = ['-', '.'] 
     #Total Liabilities, Total Assets and Number of Employees
     errorNum = 11
     for i in performanceValues: 
-        if i == 35 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there Total Liabilities
+        if i == 35 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there Total Liabilities
             return errorHandler(row, errorNum, sheetName)
-        if i == 36 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there Total Assets
+        if i == 36 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there Total Assets
             return errorHandler(row, errorNum + 1, sheetName)
-        # if i == 36 and float(removeNonNumeric(row[i].value)) < 10: #Assets less than $10 Million
+        # if i == 36 and float(removeNonNumeric(row[i].value, additionalSet)) < 10: #Assets less than $10 Million
         #     return errorHandler(row, errorNum + 2, sheetName)
     return True
-def removeNonNumeric(input):
+
+def removeNonNumeric(input, additionalSet):
     output = ""
     approvedSet = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-    approvedSet2 = ['-', '.']
     counter = 0
-    for i in range(0, len(input) - 1):
+    for i in range(0, len(input)):
         if (input[i] in approvedSet):
             counter += 1
             output+= input[i]
-        if (input[i] in approvedSet2):
+        if (input[i] in additionalSet):
             output+= input[i]
     if counter == 0: return ""
     return output
@@ -209,9 +250,11 @@ def getErrorCode(input):
         11: "E11: Missing Total Liabilities",
         12: "E12: Missing Total Assets",
         13: "E13: Total assets are below $1000",
-        14: "E14: Missing 6 or more of Series 2 fields",
-        15: "E15: Series 3 Value is missing",
-        16: "E16: ROIC value is below (last 3, last 5 avg and all avg)",
+        14: "E14: Years/TTM Missing",
+        15: "E15: Yearly High/Low Values Missing",
+        34: "E34: Missing 6 or more of Series 2 fields",
+        35: "E35: Series 3 Value is missing",
+        36: "E36: ROIC value is below (last 3, last 5 avg and all avg)",
         }
 
     return switch.get(input, "")
