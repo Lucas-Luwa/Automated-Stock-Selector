@@ -45,6 +45,12 @@ def excelWriter():
                     high, low = row[x].value.split('/')
                     tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = high
                     tempWKST.cell(row = rowIndecies[sheetIndex], column = i + 1).value = low
+            #SERIES 3
+            counter = 34;
+            for i in range (215, 220):
+                if i == 218: counter += 2
+                tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[counter].value
+                counter += 1
             rowIndecies[sheetIndex] += 1
             core1.save("ProcessedSheets\\" + monthYR + "\\" + writeExcelFileName)
 
@@ -86,11 +92,10 @@ def redFlagsS2(row):
 # if avg all roic or last 5 avg or last 3 above 2 we good. otherwise eliminated
 #assets less than 1000 eliminated
 def redFlagsS3(row, sheetName):
-    performanceValues = [35, 36, 41] 
-    performanceLength = list()
+    performanceValues = [34, 35, 40] 
+    #Total Liabilities, Total Assets and Number of Employees
     errorNum = 11
     for i in performanceValues: 
-        performanceLength.append(len(removeNonNumeric(row[i].value)))
         if i == 35 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there Total Liabilities
             return errorHandler(row, errorNum, sheetName)
         if i == 36 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there Total Assets
