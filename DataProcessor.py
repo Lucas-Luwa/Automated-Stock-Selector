@@ -30,7 +30,7 @@ def excelWriter():
         tempWKST = core1['Miscellaneous']
         sheetIndex = sheetNames.index('Miscellaneous')
         #TAGS
-        if redFlagsS1(row, currSheet) and redFlagsS2(row) and redFlagsS3(row):
+        if redFlagsS1(row, currSheet) and redFlagsS2(row) and redFlagsS3(row, currSheet):
             for i in range(1,6):
                 tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[i - 1].value
             #SERIES 1
@@ -48,45 +48,56 @@ def excelWriter():
             rowIndecies[sheetIndex] += 1
             core1.save("ProcessedSheets\\" + monthYR + "\\" + writeExcelFileName)
 
-#6/12 fields
-# or any series 3
-# if avg all roic or last 5 avg or last 3 above 2 we good. otherwise eliminated
-#assets less than 1000 eliminated
 def redFlagsS1(row, sheetName):
     #41
     #PE, MKTCAP, Share Short, %Insider, %Institution, 52HighLow, DailyTrade - Series 1
     performanceValues = [5, 8, 10, 11, 12, 15, 16] 
     performanceLength = list()
+    errorNum = 0
     for i in performanceValues:
         performanceLength.append(len(removeNonNumeric(row[i].value)))
         if i == 5 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there PE
-            return errorHandler(row, 0, sheetName)
+            return errorHandler(row, errorNum, sheetName)
         if i == 5 and float(removeNonNumeric(row[i].value)) < -100: #PE Over 300
-            return errorHandler(row, 1, sheetName)
+            return errorHandler(row, errorNum + 1, sheetName)
         if i == 5 and float(removeNonNumeric(row[i].value)) > 300: #PE Under -100
-            return errorHandler(row, 2, sheetName)
+            return errorHandler(row, errorNum + 2, sheetName)
         if i == 8 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there MKTCAP
-            return errorHandler(row, 3, sheetName)
+            return errorHandler(row, errorNum + 3, sheetName)
         if i == 10 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there SHARE SHORT
-            return errorHandler(row, 4, sheetName)
+            return errorHandler(row, errorNum + 4, sheetName)
         if i == 10 and float(removeNonNumeric(row[i].value)) > 20.0: #Short percentage is over 20 percent...
-            return errorHandler(row, 5, sheetName)
+            return errorHandler(row, errorNum + 5, sheetName)
         if i == 11 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there Percent Insider
-            return errorHandler(row, 6, sheetName)
+            return errorHandler(row, errorNum + 6, sheetName)
         if i == 12 and float(removeNonNumeric(row[i].value)) == 0: #Nothing is there Institution %
-            return errorHandler(row, 7, sheetName)
+            return errorHandler(row, errorNum + 7, sheetName)
         if i == 15 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there high low
-            return errorHandler(row, 8, sheetName)
+            return errorHandler(row, errorNum + 8, sheetName)
         if i == 16 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there daily trade volume
-            return errorHandler(row, 9, sheetName)
+            return errorHandler(row, errorNum + 9, sheetName)
+        if i == 16 and performanceLength.count(0) >= 6: # 6 or more fields missing in Series
+            return errorHandler(row, errorNum + 10, sheetName)
     return True
 
 def redFlagsS2(row):
     return True
 
-def redFlagsS3(row):
+# if avg all roic or last 5 avg or last 3 above 2 we good. otherwise eliminated
+#assets less than 1000 eliminated
+def redFlagsS3(row, sheetName):
+    performanceValues = [35, 36, 41] 
+    performanceLength = list()
+    errorNum = 11
+    for i in performanceValues: 
+        performanceLength.append(len(removeNonNumeric(row[i].value)))
+        if i == 35 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there Total Liabilities
+            return errorHandler(row, errorNum, sheetName)
+        if i == 36 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there Total Assets
+            return errorHandler(row, errorNum + 1, sheetName)
+        # if i == 36 and float(removeNonNumeric(row[i].value)) < 10: #Assets less than $10 Million
+        #     return errorHandler(row, errorNum + 2, sheetName)
     return True
-
 def removeNonNumeric(input):
     output = ""
     approvedSet = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
@@ -190,12 +201,12 @@ def getErrorCode(input):
         8: "E8: 52 Week High and Low missing",
         9: "E9: Daily trade volume missing",
         10: "E10: Missing 6 or more of Series 1 fields",
-        11: "E11: Missing 6 or more of Series 2 fields",
-        12: "E12: Series 3 Value is missing",
-        13: "E13: ROIC value is below (last 3, last 5 avg and all avg)",
-        14: "E14: Assets below $1000",
-        15: "E15: >40% of company is held by insiders",
-        16: "E16: >20% of company shares shorted",
+        11: "E11: Missing Total Liabilities",
+        12: "E12: Missing Total Assets",
+        13: "E13: Total assets are below $1000",
+        14: "E14: Missing 6 or more of Series 2 fields",
+        15: "E15: Series 3 Value is missing",
+        16: "E16: ROIC value is below (last 3, last 5 avg and all avg)",
         }
 
     return switch.get(input, "")
