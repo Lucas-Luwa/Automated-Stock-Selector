@@ -6,7 +6,7 @@ import os
 import numpy
 
 #Modify Toggles if desired
-wipeCurrVerNum = True
+wipeCurrVerNum, generateSheetToggle = True, False
 
 def main():
     global sheetNames, writeExcelFileName, rawDataBook, core1, rowIndecies
@@ -24,10 +24,10 @@ def main():
     excelWriter()
 
 def excelWriter():
-    global currSheet
+    global currSheet, yearsTTM
     stoppingIndecies = [702, 1220, 1053, 73, 45, 148, 175, 792, 261, 182, 1498, 68, 680]
     counter = 0;
-    for row in rawDataBook['Miscellaneous'].iter_rows(15, 16):
+    for row in rawDataBook['Miscellaneous'].iter_rows(15, 17):
         currSheet = 'Miscellaneous'
         tempWKST = core1['Miscellaneous']
         sheetIndex = sheetNames.index('Miscellaneous')
@@ -36,8 +36,10 @@ def excelWriter():
             continueRunning = True
             #SERIES 2 - More processing than 1 and 3. We don't wanna perform this twice. Errors handled inside here.
                 #s2Indecies = [18, 17, 19, 20, 25, 27, 28, 29, 30, 31, 33]
-            years, continueRunning = yearProcessing(row, 18)
-            if continueRunning: high, low, continueRunning = highLowValueProcessing(row, 17, years)
+            yearsTTM, continueRunning = yearProcessing(row, 18)
+            if continueRunning: high, low, continueRunning = highLowValueProcessing(row, 17)
+            if continueRunning: revenuePerShare, continueRunning = rpsProcessing(row, 19)
+            if continueRunning: earningsPerShare, continueRunning = epsProcessing(row, 20)
             if continueRunning: 
                 #TAGS
                 for i in range(1,6):
@@ -61,23 +63,62 @@ def excelWriter():
                     tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[counter].value
                     counter += 1
                 rowIndecies[sheetIndex] += 1
-                # core1.save("ProcessedSheets\\" + monthYR + "\\" + writeExcelFileName)
+                if generateSheetToggle: core1.save("ProcessedSheets\\" + monthYR + "\\" + writeExcelFileName)
+# if avg all roic or last 5 avg or last 3 above 2 we good. otherwise eliminated
 
-def highLowValueProcessing(row, rowIndex, years):
-    errorNum = 15
-    high = low = [-1] * len(years)
+def epsProcessing(row, rowIndex):
+    errorNum = 17
+    earnings = [-1] * len(yearsTTM)
+    if row[rowIndex].value[0] == ')': row[rowIndex].value = row[rowIndex].value[1:] # Temporary until infinity issue is fixed
+    if row[rowIndex].value == None: return earnings, errorHandler(row, errorNum, currSheet)
+    individualValues = list()
+    additionalSet = ['.', '(', ')']
+    rawNumbers = removeNonNumeric(row[rowIndex].value, additionalSet) 
+    if len(rawNumbers) == 0: return earnings, errorHandler(row, errorNum, currSheet)
+    while len(rawNumbers) > 0:
+        if rawNumbers[0] == '(':
+            individualValues.append(rawNumbers[0:rawNumbers.index(')') + 1])
+            rawNumbers = rawNumbers[rawNumbers.index(')') + 1:]
+        else:
+            individualValues.append(rawNumbers[0:rawNumbers.index('.') + 3])
+            rawNumbers = rawNumbers[rawNumbers.index('.') + 3:]
+    for i in range(0, len(yearsTTM)):
+        if yearsTTM[i] == 1 and len(individualValues) > 0:
+            earnings[i] = individualValues.pop(len(individualValues) - 1)
+    return earnings, True
+
+def rpsProcessing(row, rowIndex):
+    errorNum = 16
+    revenue = [-1] * len(yearsTTM)
+    if row[rowIndex].value == None: return revenue, errorHandler(row, errorNum, currSheet)
     individualValues = list()
     additionalSet = ['.']
     rawNumbers = removeNonNumeric(row[rowIndex].value, additionalSet) 
-    if len(rawNumbers) == 0:
-        return high, low, errorHandler(row, errorNum, currSheet)
+    if len(rawNumbers) == 0: return revenue, errorHandler(row, errorNum, currSheet)
     while len(rawNumbers) > 0:
         individualValues.append(rawNumbers[0:rawNumbers.index('.') + 3])
         rawNumbers = rawNumbers[rawNumbers.index('.') + 3:]
-    print(individualValues)
-    for i in range(0, len(individualValues)):
-        if i % 2 == 0:
-        else: 
+    for i in range(0, len(yearsTTM)):
+        if yearsTTM[i] == 1 and len(individualValues) > 0:
+            revenue[i] = individualValues.pop(len(individualValues) - 1)
+    return revenue, True
+
+def highLowValueProcessing(row, rowIndex):
+    errorNum = 15
+    high = [-1] * len(yearsTTM)
+    low = [-1] * len(yearsTTM)
+    if row[rowIndex].value == None: return high, low, errorHandler(row, errorNum, currSheet)
+    individualValues = list()
+    additionalSet = ['.']
+    rawNumbers = removeNonNumeric(row[rowIndex].value, additionalSet) 
+    if len(rawNumbers) == 0: return high, low, errorHandler(row, errorNum, currSheet)
+    while len(rawNumbers) > 0:
+        individualValues.append(rawNumbers[0:rawNumbers.index('.') + 3])
+        rawNumbers = rawNumbers[rawNumbers.index('.') + 3:]
+    for i in range(0, len(yearsTTM)):
+        if yearsTTM[i] == 1 and len(individualValues) > 0:
+            low[i] = individualValues.pop(len(individualValues) - 1)
+            high[i] = individualValues.pop(len(individualValues) - 1)
     return high, low, True
 
 def yearProcessing(row, rowIndex):
@@ -126,11 +167,7 @@ def redFlagsS1(row, sheetName):
             return errorHandler(row, errorNum + 10, sheetName)
     return True
 
-# def redFlagsS2(row):
-#     return True
-
-# if avg all roic or last 5 avg or last 3 above 2 we good. otherwise eliminated
-#assets less than 1000 eliminated
+#assets less than 1000 eliminated maybe change this
 def redFlagsS3(row, sheetName):
     performanceValues = [34, 35, 40] 
     additionalSet = ['-', '.'] 
@@ -171,7 +208,7 @@ def errorHandler(row, flag, industry):
             tempWKST.cell(row = rowIndecies[sheetIndex] - 1, column = i).value = row[x - 1].value
     tempWKST.cell(row = rowIndecies[sheetIndex] - 1, column = 7).value = flagComment
     rowIndecies[sheetIndex] += 1
-    core1.save("ProcessedSheets\\" + monthYR + "\\" + writeExcelFileName)
+    if generateSheetToggle: core1.save("ProcessedSheets\\" + monthYR + "\\" + writeExcelFileName)
     return False;
 
 def findRawDataFileName():
