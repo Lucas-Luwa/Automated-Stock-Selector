@@ -6,15 +6,122 @@ import os
 
 #Modify Toggles if desired
 wipeCurrVerNum = True
-rawDataFileName = "May2023RawDataV1.xlsx"
-
 
 def main():
-    readExcelFileName = generateFileName() #We write to this
-    rawDataBook = openpyxl.load_workbook(rawDataFileName)
+    global sheetNames, writeExcelFileName, rawDataBook, core1, rowIndecies
+    start = time.time()
+    writeExcelFileName = generateFileName() #We write to this
+    rawDataFileName = findRawDataFileName()
+    rawDataBook = openpyxl.load_workbook(rawDataFileName)#Pull data from this 
     rawData = rawDataBook.active
+    coreName = "CoreExcelFiles/P2MasterTemplate5.27.23.xlsx"
+    core1 = openpyxl.load_workbook(coreName)
+    sheetNames = core1.sheetnames
+    
+    rowIndecies = [3] * (len(sheetNames))
+    #Iterate through it, but for now we go for Miscellaneous
+    excelWriter()
 
-    print(readExcelFileName)
+def excelWriter():
+    stoppingIndecies = [702, 1220, 1053, 73, 45, 148, 175, 792, 261, 182, 1498, 68, 680]
+    counter = 0;
+    for row in rawDataBook['Miscellaneous'].iter_rows(3, 45 - 1):
+        tempWKST = core1['Miscellaneous']
+        sheetIndex = sheetNames.index('Miscellaneous')
+        #TAGS
+        if redFlagsS1(row) and redFlagsS2(row) and redFlagsS3(row):
+            for i in range(1,6):
+                tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[i - 1].value
+            #SERIES 1
+            for i in range(7, 16):
+                x = i - 2
+                if i >= 8: x += 2
+                if i >= 10: x += 1
+                if i >= 15: i += 1
+                if not i == 14:
+                    tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[x].value
+                else: 
+                    high, low = row[x].value.split('/')
+                    tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = high
+                    tempWKST.cell(row = rowIndecies[sheetIndex], column = i + 1).value = low
+            rowIndecies[sheetIndex] += 1
+            core1.save("ProcessedSheets\\" + monthYR + "\\" + writeExcelFileName)
+
+#6/12 fields
+# or any series 3
+# if avg all roic or last 5 avg or last 3 above 2 we good. otherwise eliminated
+#assets less than 1000 eliminated
+def redFlagsS1(row):
+    #41
+    #PE, MKTCAP, Share Short, %Insider, %Institution, 52HighLow, DailyTrade - Series 1
+    performanceValues = [5, 8, 10, 11, 12, 15, 16] 
+    performanceLength = list()
+    for i in performanceValues:
+        performanceLength.append(len(removeNonNumeric(row[i].value)))
+        if i == 5 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there PE
+            return errorHandler(row, 0)
+        if i == 5 and float(removeNonNumeric(row[i].value)) < -100: #PE Over 300
+            return errorHandler(row, 1)
+        if i == 5 and float(removeNonNumeric(row[i].value)) > 300: #PE Under -100
+            return errorHandler(row, 2)
+        if i == 8 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there MKTCAP
+            return errorHandler(row, 3)
+        if i == 10 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there SHARE SHORT
+            return errorHandler(row, 4)
+        if i == 10 and float(removeNonNumeric(row[i].value)) > 20.0: #Short percentage is over 20 percent...
+            return errorHandler(row, 5)
+        if i == 11 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there Percent Insider
+            return errorHandler(row, 6)
+        if i == 12 and float(removeNonNumeric(row[i].value)) == 0: #Nothing is there Institution %
+            return errorHandler(row, 7)
+        if i == 15 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there high low
+            return errorHandler(row, 8)
+        if i == 16 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there daily trade volume
+            return errorHandler(row, 9)
+    return True
+
+def redFlagsS2(row):
+    return True
+
+def redFlagsS3(row):
+    return True
+
+def removeNonNumeric(input):
+    output = ""
+    approvedSet = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+    approvedSet2 = ['-', '.']
+    counter = 0
+    for i in range(0, len(input) - 1):
+        if (input[i] in approvedSet):
+            counter += 1
+            output+= input[i]
+        if (input[i] in approvedSet2):
+            output+= input[i]
+    if counter == 0: return ""
+    return output
+
+def errorHandler(row, flag):
+    tempWKST = core1['ELIMINATED']
+    sheetIndex = sheetNames.index('ELIMINATED')
+    flagComment = getErrorCode(flag)
+    for i in range(1,6):
+        tempWKST.cell(row = rowIndecies[sheetIndex] - 1, column = i).value = row[i - 1].value
+    rowIndecies[sheetIndex] += 1
+    core1.save("ProcessedSheets\\" + monthYR + "\\" + writeExcelFileName)
+    return False;
+
+def findRawDataFileName():
+    global monthYR
+    recoveryFile = open('Recovery.txt')
+    recoveryLines = recoveryFile.readlines()
+    if (len(recoveryLines) < 3):
+        print("ERROR: Please check that your Recovery.txt file has been generated properly.")
+        monthYR = "ERROR"
+        versionNum = 0
+    else:
+        monthYR = recoveryLines[4].split(" ")[1].strip()
+        versionNum = recoveryLines[5].split(" ")[1].strip()
+    return str(monthYR) + "RawDataV" + str(versionNum) + ".xlsx"
 
 def generateFileName():
     recoveryFile = open('Recovery.txt')
@@ -50,14 +157,6 @@ def generateFileName():
         writeToRecovery(1, versionNumber, False)
     return proposedFileName
 
-#-100 to +300
-#6/12 fields
-#>40 insider
-#>20 short
-# if stock is missing PE, or any series 3
-# if avg all roic or last 5 avg or last 3 above 2 we good. otherwise eliminated
-#assets less than 1000 eliminated
-
 def writeToRecovery(toggle, versionNumber, wipeCurrVerNum):
     recoveryFile = open('Recovery.txt', 'r')
     recoveryLines = recoveryFile.readlines()
@@ -76,13 +175,20 @@ def getErrorCode(input):
         0: "E0: P/E Ratio is missing",
         1: "E1: P/E Ratio is below the cutoff of -100",
         2: "E2: P/E Ratio is above the cutoff of +300",
-        3: "E3: Missing 6 or more of Series 1 fields",
-        4: "E4: Missing 6 or more of Series 2 fields",
-        5: "E5: Series 3 Value is missing",
-        6: "E6: ROIC value is below (last 3, last 5 avg and all avg)",
-        7: "E7: Assets below $1000",
-        8: "E8: >40% of company is held by insiders",
-        9: "E9: >20% of company shares shorted",
+        3: "E3: Missing Market Cap Value",
+        4: "E4: Missing Shares Shorted Value",
+        5: "E5: Shares Shorted Value over 20 percent",
+        6: "E6: Missing Percent of Insiders",
+        7: "E7: Percent held by institutions is missing",
+        8: "E8: 52 Week High and Low missing",
+        9: "E9: Daily trade volume missing",
+        10: "E10: Missing 6 or more of Series 1 fields",
+        11: "E11: Missing 6 or more of Series 2 fields",
+        12: "E12: Series 3 Value is missing",
+        13: "E13: ROIC value is below (last 3, last 5 avg and all avg)",
+        14: "E14: Assets below $1000",
+        15: "E15: >40% of company is held by insiders",
+        16: "E16: >20% of company shares shorted",
         }
 
     return switch.get(input, "")

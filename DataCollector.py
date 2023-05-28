@@ -173,7 +173,6 @@ def dataSplitter(input):
 
 def dataCollect(input):
     url = "https://roic.ai/company/" + str(input)
-    
     response = requests.get(url)
     contents = BeautifulSoup(response.text, 'html.parser')
     splitter = 'City'
