@@ -14,7 +14,7 @@ def main():
     rawDataFileName = findRawDataFileName()
     rawDataBook = openpyxl.load_workbook(rawDataFileName)#Pull data from this 
     rawData = rawDataBook.active
-    coreName = "CoreExcelFiles/P2MasterTemplate5.27.23.xlsx"
+    coreName = "CoreExcelFiles/P2MasterTemplate5.28.23.xlsx"
     core1 = openpyxl.load_workbook(coreName)
     sheetNames = core1.sheetnames
     
@@ -26,10 +26,11 @@ def excelWriter():
     stoppingIndecies = [702, 1220, 1053, 73, 45, 148, 175, 792, 261, 182, 1498, 68, 680]
     counter = 0;
     for row in rawDataBook['Miscellaneous'].iter_rows(3, 45 - 1):
+        currSheet = 'Miscellaneous'
         tempWKST = core1['Miscellaneous']
         sheetIndex = sheetNames.index('Miscellaneous')
         #TAGS
-        if redFlagsS1(row) and redFlagsS2(row) and redFlagsS3(row):
+        if redFlagsS1(row, currSheet) and redFlagsS2(row) and redFlagsS3(row):
             for i in range(1,6):
                 tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[i - 1].value
             #SERIES 1
@@ -51,7 +52,7 @@ def excelWriter():
 # or any series 3
 # if avg all roic or last 5 avg or last 3 above 2 we good. otherwise eliminated
 #assets less than 1000 eliminated
-def redFlagsS1(row):
+def redFlagsS1(row, sheetName):
     #41
     #PE, MKTCAP, Share Short, %Insider, %Institution, 52HighLow, DailyTrade - Series 1
     performanceValues = [5, 8, 10, 11, 12, 15, 16] 
@@ -59,25 +60,25 @@ def redFlagsS1(row):
     for i in performanceValues:
         performanceLength.append(len(removeNonNumeric(row[i].value)))
         if i == 5 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there PE
-            return errorHandler(row, 0)
+            return errorHandler(row, 0, sheetName)
         if i == 5 and float(removeNonNumeric(row[i].value)) < -100: #PE Over 300
-            return errorHandler(row, 1)
+            return errorHandler(row, 1, sheetName)
         if i == 5 and float(removeNonNumeric(row[i].value)) > 300: #PE Under -100
-            return errorHandler(row, 2)
+            return errorHandler(row, 2, sheetName)
         if i == 8 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there MKTCAP
-            return errorHandler(row, 3)
+            return errorHandler(row, 3, sheetName)
         if i == 10 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there SHARE SHORT
-            return errorHandler(row, 4)
+            return errorHandler(row, 4, sheetName)
         if i == 10 and float(removeNonNumeric(row[i].value)) > 20.0: #Short percentage is over 20 percent...
-            return errorHandler(row, 5)
+            return errorHandler(row, 5, sheetName)
         if i == 11 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there Percent Insider
-            return errorHandler(row, 6)
+            return errorHandler(row, 6, sheetName)
         if i == 12 and float(removeNonNumeric(row[i].value)) == 0: #Nothing is there Institution %
-            return errorHandler(row, 7)
+            return errorHandler(row, 7, sheetName)
         if i == 15 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there high low
-            return errorHandler(row, 8)
+            return errorHandler(row, 8, sheetName)
         if i == 16 and len(removeNonNumeric(row[i].value)) == 0: #Nothing is there daily trade volume
-            return errorHandler(row, 9)
+            return errorHandler(row, 9, sheetName)
     return True
 
 def redFlagsS2(row):
@@ -100,12 +101,18 @@ def removeNonNumeric(input):
     if counter == 0: return ""
     return output
 
-def errorHandler(row, flag):
+def errorHandler(row, flag, industry):
     tempWKST = core1['ELIMINATED']
     sheetIndex = sheetNames.index('ELIMINATED')
     flagComment = getErrorCode(flag)
-    for i in range(1,6):
-        tempWKST.cell(row = rowIndecies[sheetIndex] - 1, column = i).value = row[i - 1].value
+    for i in range(1,7):
+        x = i
+        if i == 5: 
+            tempWKST.cell(row = rowIndecies[sheetIndex] - 1, column = i).value = industry
+        else:
+            if i > 5: x -= 1
+            tempWKST.cell(row = rowIndecies[sheetIndex] - 1, column = i).value = row[x - 1].value
+    tempWKST.cell(row = rowIndecies[sheetIndex] - 1, column = 7).value = flagComment
     rowIndecies[sheetIndex] += 1
     core1.save("ProcessedSheets\\" + monthYR + "\\" + writeExcelFileName)
     return False;
