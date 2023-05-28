@@ -8,7 +8,7 @@ import datetime
 import calendar
 
 #Modify Toggles 
-nasdaqActive, nyseActive, recoveryMode, nasdaqTestMode, nyseTestMode, manualResetVerNum, manualStartIndex  = True, False, False, True, False, False, False
+nasdaqActive, nyseActive, recoveryMode, nasdaqTestMode, nyseTestMode, manualResetVerNum, manualStartIndex  = True, True, False, False, False, False, False
 recoveryIndecies = [424, 1101, 564, 40, 29, 88, 59, 596, 87, 52, 799, 17, 212]
 recoveryFileName = "May23RawData CompleteBackup Nasdaq.xlsx"
 recoveryFailureIndex = 631 #Use this for manual index start as well 
@@ -73,7 +73,7 @@ def excelWriter(sheet, rowIndecies, failedIndex, endVal, selectorBit, startIndex
     counter = startIndex - 2;
     if manualStartIndex: endVal = startIndex + endVal
     for row in sheet.iter_rows(startIndex, endVal):
-        start = time.time()
+        start1 = time.time()
         ticker, name, country, ipoyr, currSheet, industry = row[0].value, row[1].value, row[6].value, row[7].value, row[9].value, row[10].value
         processed = dataCollect(ticker)
         if processed.__contains__('500: Internal Server Error') and len(processed) < 100:
@@ -113,9 +113,9 @@ def excelWriter(sheet, rowIndecies, failedIndex, endVal, selectorBit, startIndex
         #Impatient programmer pacifier 
         #Change the counter % [Some number] to change number of statements printed
         if (counter % 1 == 0 or counter == 1 or counter == endVal - 1): 
-            print("Running ", counter, " of ", endVal - 1, " in NASDAQ ", "| Time Elapsed: ", str(datetime.timedelta(seconds = round(end - start))), \
+            print("Running ", counter, " of ", endVal - 1, " in NASDAQ ", "| Time Elapsed: ", str(datetime.timedelta(seconds = round(end - start1))), \
             " | Cumulative Time Elapsed", str(datetime.timedelta(seconds = round(end - start)))) \
-            if selectorBit == 1 else print("Running ", counter, " of ", endVal - 1, " in NYSE ", "| Time Elapsed: ", str(datetime.timedelta(seconds = round(end - start))), \
+            if selectorBit == 1 else print("Running ", counter, " of ", endVal - 1, " in NYSE ", "| Time Elapsed: ", str(datetime.timedelta(seconds = round(end - start1))), \
             " | Cumulative Time Elapsed", str(datetime.timedelta(seconds = round(end - start))))
     print("NASDAQ Complete \n") if selectorBit == 1 else print("NYSE Complete \n")
     return rowIndecies, failedIndex
