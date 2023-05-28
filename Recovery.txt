@@ -1,7 +1,7 @@
-rowIndecies: [3, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
-failedIndex: 4
-Last successful Ticker: AADI
-Current Exchange: NASDAQ
+This are the rowIndecies: [702, 1220, 1053, 73, 45, 148, 175, 792, 261, 182, 1498, 68, 680]
+This is the current failedIndex: 750
+Last successful Ticker: ZWS
+Current Exchange: NYSE
 Month/Year: May2023
 VersionNumber: 1
 Updated: 2023-05-27
