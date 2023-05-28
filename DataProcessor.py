@@ -41,6 +41,7 @@ def excelWriter():
             if continueRunning: revenuePerShare, continueRunning = rpsProcessing(row, 19)
             if continueRunning: earningsPerShare, continueRunning = epsProcessing(row, 20)
             if continueRunning: 
+            if continueRunning: 
                 #TAGS
                 for i in range(1,6):
                     tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[i - 1].value

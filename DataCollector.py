@@ -8,13 +8,13 @@ import datetime
 import calendar
 
 #Modify Toggles 
-nasdaqActive, nyseActive, recoveryMode, nasdaqTestMode, nyseTestMode, manualResetVerNum  = True, False, False, True, True, False
+nasdaqActive, nyseActive, recoveryMode, nasdaqTestMode, nyseTestMode, manualResetVerNum, manualStartIndex  = True, False, False, True, False, False, False
 recoveryIndecies = [424, 1101, 564, 40, 29, 88, 59, 596, 87, 52, 799, 17, 212]
 recoveryFileName = "May23RawData CompleteBackup Nasdaq.xlsx"
-recoveryFailureIndex = 631
-nasdaqRecoveryIndex = 4238
-testModeStocks = 5
-nyseRecoveryIndex = 2
+recoveryFailureIndex = 631 #Use this for manual index start as well 
+nasdaqRecoveryIndex = 2279 #Use this for manual index start as well 
+testModeStocks = 2
+nyseRecoveryIndex = 2 #Use this for manual index start as well
 customVersionNumber = 8
 
 def main():
@@ -35,8 +35,8 @@ def main():
     genXlSheets(nasdaqName, coreName) #It's the same for both.
 
     failedIndex = 2 if not recoveryMode and nasdaqActive else recoveryFailureIndex
-    startIndexNasdaq = 2 if not recoveryMode else nasdaqRecoveryIndex
-    startIndexNYSE = 2 if not recoveryMode else nyseRecoveryIndex
+    startIndexNasdaq = 2 if not recoveryMode and not manualStartIndex else nasdaqRecoveryIndex
+    startIndexNYSE = 2 if not recoveryMode and not manualStartIndex else nyseRecoveryIndex
     
     newFileName = str(calendar.month_name[int(month)]) + str(year) + "RawDataV" + str(versionNumber) + ".xlsx"
     if nasdaqActive: rowIndecies, failedIndex = excelWriter(nasdaq, rowIndecies, failedIndex, numNasdaqStocks, 1, startIndexNasdaq)
@@ -58,7 +58,7 @@ def startupSequence():
         existingMonthYear = recoveryLines[4].split(" ")
         existingVersionNum = recoveryLines[5].split(" ")
         if not manualResetVerNum: versionNumber = int(existingVersionNum[1]) + 1 if (str(calendar.month_name[int(month)] + str(year))) == str(existingMonthYear[1]).strip() else 0
-        else: versionNumber = 8
+        else: versionNumber = customVersionNumber
     return numNasdaqStocks, numNYSEStocks, versionNumber, year, month
 
 def versionUpdate(month, year, versionNumber):
@@ -71,6 +71,7 @@ def versionUpdate(month, year, versionNumber):
 
 def excelWriter(sheet, rowIndecies, failedIndex, endVal, selectorBit, startIndex):
     counter = startIndex - 2;
+    if manualStartIndex: endVal = startIndex + endVal
     for row in sheet.iter_rows(startIndex, endVal):
         start = time.time()
         ticker, name, country, ipoyr, currSheet, industry = row[0].value, row[1].value, row[6].value, row[7].value, row[9].value, row[10].value
@@ -190,7 +191,6 @@ def genXlSheets(input1, writeloc):
         setholder.add(row[9].value)
 
     for element in setholder:
-        # print(writeTo.sheetnames)
         if element in writeTo.sheetnames:
             pass
         elif element == None and 'Unspecified' not in writeTo.sheetnames:
@@ -207,9 +207,10 @@ def indexLoc(input, target):
 def findBackNumber(input, offset, disableDots):
     returnVal = str()
     dotcounter = 0
+    input = input.replace("(Infinity)", "{0}")
+    input = input.replace("Infinity", "{0}")
     for i in range(len(input) - 1, -1, -1):
-        # print('\n XX' + input[i])
-        approvedCharacters = {'-', ',', '%', ' ', '/', '(', ')'}
+        approvedCharacters = {'-', ',', '%', ' ', '/', '(', ')', '{', '}'}
         if(input[i].isnumeric() or offset > 0 or input[i] in approvedCharacters):
             returnVal = input[i] + returnVal
             if (input[i] != '-' and input[i] != ',' and input[i]!= '%' and input[i]!= ' '):
