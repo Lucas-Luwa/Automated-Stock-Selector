@@ -144,7 +144,7 @@ def dataSplitter(input):
     secondaryRetSet.append(yearsTTM)
 
     delimiters2 = ['Earnings per share', 'FCF per share', 'Dividends per share', 'CAPEX per share', 'Book Value per sh.', 'Comm.Shares outs.'
-    , 'P/E to S&P500', 'Avg. annual div. yield', 'Revenue (m)', 'Operating margin', 'Depreciation (m)', 'Income tax rate', 'Working capital (m)', 'Equity (m)'
+    , 'P/E to S&P500', 'Avg. annual div. yield', 'Revenue (m)', 'Operating margin', 'Depreciation (m)', 'Income tax rate', 'Working capital (m)', 'ROIC'
     , 'Return on capital']
     inputoffset2 = [0, 0, 0, 0, 0, 0, 13, 0, 0, 0, 0, 0, 0, 0, 0]
     for i in range(len(delimiters2)):
