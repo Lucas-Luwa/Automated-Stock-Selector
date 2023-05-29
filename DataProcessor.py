@@ -6,7 +6,7 @@ import os
 import numpy
 
 #Modify Toggles if desired
-wipeCurrVerNum, generateSheetToggle = True, False
+wipeCurrVerNum, generateSheetToggle = True, True
 
 def main():
     global sheetNames, writeExcelFileName, rawDataBook, core1, rowIndecies
@@ -27,7 +27,7 @@ def excelWriter():
     global currSheet, yearsTTM, row
     stoppingIndecies = [702, 1220, 1053, 73, 45, 148, 175, 792, 261, 182, 1498, 68, 680]
     counter = 0;
-    for row in rawDataBook['Miscellaneous'].iter_rows(15, 17):
+    for row in rawDataBook['Miscellaneous'].iter_rows(39, 39):
         currSheet = 'Miscellaneous'
         tempWKST = core1['Miscellaneous']
         sheetIndex = sheetNames.index('Miscellaneous')
@@ -42,8 +42,13 @@ def excelWriter():
             if continueRunning: earningsPerShare, continueRunning = series2Processor(20, 17, 3, ['.', '(', ')', '{', '}'])
             if continueRunning: priceEarnings, continueRunning = series2Processor(25, 18, 4, ['.', '-', ' '])
             if continueRunning: divYield, continueRunning = series2Processor(27, 19, 5, ['.', '-', ' '])
-            # if continueRunning: 
-
+            #if continueRunning: Revenue, continueRunning = series2Processor(28, 20, 6, ['.', '-', ' '])
+            if continueRunning: operatingMargin, continueRunning = series2Processor(29, 20, 6, ['.', '-', ' ', '%', '(', ')'])
+            # if continueRunning: netProfit, continueRunning = series2Processor(30, 21, 7, ['.', '-', ' ', '%'])
+            if continueRunning: netProfitMargin, continueRunning = series2Processor(31, 22, 8, ['.', '-', ' ', '%', '(', ')'])
+            if continueRunning: revenue, netProfit, continueRunning = series2Special(28, 30, 23, 24, netProfitMargin)
+            #Problem with revenue calculation
+            #DO OP margin, net profit, npm roic, 
             if continueRunning: 
                 #TAGS
                 for i in range(1,6):
@@ -69,15 +74,45 @@ def excelWriter():
                 rowIndecies[sheetIndex] += 1
                 if generateSheetToggle: core1.save("ProcessedSheets\\" + monthYR + "\\" + writeExcelFileName)
 
-# if avg all roic or last 5 avg or last 3 above 2 we good. otherwise eliminated
+def series2Special(revenueIndex, profMargIndex, revenueError, profMargError, netProfitMargin):
+    if row[revenueIndex].value == None: return None, errorHandler(revenueError, currSheet)
+    if row[profMargIndex].value == None: return None, errorHandler(profMargError, currSheet)
+    if row[revenueIndex].value[0] == ')': row[revenueIndex].value = row[revenueIndex].value[1:] # Temporary until infinity issue is fixed
+    if row[profMargIndex].value[0] == ')': row[profMargIndex].value = row[profMargIndex].value[1:] # Temporary until infinity issue is fixed
+    revOutput = [-1] * len(yearsTTM)
+    profMargOutput = [-1] * len(yearsTTM)
+    individualValues1 = list()
+    individualValues2 = list()
+    rawNumbersRevenue = removeNonNumeric(row[revenueIndex].value, ['(', ')']) 
+    rawNumbersProfitMargin = removeNonNumeric(row[profMargIndex].value, ['(', ')']) 
+    if len(rawNumbersRevenue) == 0: return None, errorHandler(revenueError, currSheet)
+    if len(rawNumbersProfitMargin) == 0: return None, errorHandler(profMargError, currSheet)
+    numItems = len(netProfitMargin) - netProfitMargin.count(-1)
+    if len(rawNumbersRevenue) / numItems - round(len(rawNumbersRevenue) / numItems) == 0.00:
+        spliceIndex = int(len(rawNumbersRevenue) / numItems)
+        while len(rawNumbersRevenue) > 0:
+            individualValues1.append(rawNumbersRevenue[0:spliceIndex])
+            rawNumbersRevenue = rawNumbersRevenue[spliceIndex:]
+        # while len(rawNumbersProfitMargin) > 0:
+        #     pass 
+    else: #Guessing time...
+        pass
+
+
+
+    return revOutput, profMargOutput, True
+
+
 def series2Processor(rowIndex, errorNum, idNum, additionalSet):
     if row[rowIndex].value == None: return None, errorHandler(errorNum, currSheet)
     if row[rowIndex].value[0] == ')' and idNum == 3: row[rowIndex].value = row[rowIndex].value[1:] # Temporary until infinity issue is fixed
+    if row[rowIndex].value[0:2] == ')%' and idNum == 8: row[rowIndex].value = row[rowIndex].value[2:] # Temporary until infinity issue is fixed
+
     output = [-1] * len(yearsTTM)
     if idNum == 1: output2 = [-1] * len(yearsTTM)
     individualValues = list()
     rawNumbers = removeNonNumeric(row[rowIndex].value, additionalSet) 
-    if len(rawNumbers) == 0: return None, errorHandler(errorNum, currSheet)
+    if len(rawNumbers) == 0 and not idNum == 5: return None, errorHandler(errorNum, currSheet)
     while len(rawNumbers) > 0:
         individualValues, rawNumbers = series2ProcessorCondHelper(idNum, individualValues, rawNumbers)
     for i in range(0, len(yearsTTM)):
@@ -88,6 +123,13 @@ def series2Processor(rowIndex, errorNum, idNum, additionalSet):
     return output, True
 
 def series2ProcessorCondHelper(idNum, individualValues, rawNumbers):
+    if idNum in [6, 8]:
+        if rawNumbers[0] == '-':
+            individualValues.append(str(0.0))
+            rawNumbers = rawNumbers[3:]
+        else:
+            individualValues.append(rawNumbers[0:rawNumbers.index('%') + 1])
+            rawNumbers = rawNumbers[rawNumbers.index('%') + 1:]
     if idNum in [4]:
         if rawNumbers[0] == '(':
             individualValues.append(rawNumbers[0:rawNumbers.index(')') + 1])
@@ -154,12 +196,16 @@ def redFlagsS1(sheetName):
             return errorHandler(errorNum + 5, sheetName)
         if i == 11 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there Percent Insider
             return errorHandler(errorNum + 6, sheetName)
-        if i == 12 and float(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there Institution %
+        if i == 12 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there Institution %
             return errorHandler(errorNum + 7, sheetName)
+        if i == 12 and float(removeNonNumeric(row[i].value, additionalSet)) > 95: #Institution Value too %
+            return errorHandler(102, sheetName)
         if i == 15 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there high low
             return errorHandler(errorNum + 8, sheetName)
         if i == 16 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there daily trade volume
             return errorHandler(errorNum + 9, sheetName)
+        if i == 16 and float(removeNonNumeric(row[i].value, additionalSet)) < .15: #Dailhy trade volume below 150,000
+            return errorHandler(103, sheetName)
         if i == 16 and performanceLength.count(0) >= 6: # 6 or more fields missing in Series
             return errorHandler(errorNum + 10, sheetName)
     return True
@@ -170,11 +216,16 @@ def redFlagsS3(sheetName):
     additionalSet = ['-', '.'] 
     #Total Liabilities, Total Assets and Number of Employees
     errorNum = 11
+    errorNum2 = 100
     for i in performanceValues: 
         if i == 35 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there Total Liabilities
             return errorHandler(errorNum, sheetName)
         if i == 36 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there Total Assets
             return errorHandler(errorNum + 1, sheetName)
+        if i == 40 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Number of employees missing
+            return errorHandler(errorNum2, sheetName) 
+        if i == 40 and int(removeNonNumeric(row[i].value, additionalSet)) < 50: #Short percentage is over 20 percent...
+            return errorHandler(errorNum2 + 1, sheetName)
         # if i == 36 and float(removeNonNumeric(row[i].value, additionalSet)) < 10: #Assets less than $10 Million
         #     return errorHandler(errorNum + 2, sheetName)
     return True
@@ -293,6 +344,10 @@ def getErrorCode(input):
         34: "E34: Missing 6 or more of Series 2 fields",
         35: "E35: Series 3 Value is missing",
         36: "E36: ROIC value is below (last 3, last 5 avg and all avg)",
+        100: "E100: Number of Employees Missing",
+        101: "E101: Number of Employees below 50",
+        102: "E102: % Held by institutions over 100",
+        103: "E103: Daily trading volume below 150k",
         }
 
     return switch.get(input, "")
