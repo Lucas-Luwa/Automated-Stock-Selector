@@ -11,8 +11,9 @@ from math import floor
 wipeCurrVerNum, generateSheetToggle = True, True
 
 def main():
-    global sheetNames, writeExcelFileName, rawDataBook, core1, rowIndecies
-    start = time.time()
+    global sheetNames, writeExcelFileName, rawDataBook, core1, rowIndecies, originalStart
+    originalStart = time.time()
+    print("Starting data processor...")
     writeExcelFileName = generateFileName() #We write to this
     rawDataFileName = findRawDataFileName()
     rawDataBook = openpyxl.load_workbook(rawDataFileName)#Pull data from this 
@@ -24,74 +25,85 @@ def main():
     rowIndecies = [3] * (len(sheetNames))
     #Iterate through it, but for now we go for Miscellaneous
     excelWriter()
+    end = time.time()
+    elapsed = round(end - originalStart)
+    print("Total Time Elapsed: ", str(datetime.timedelta(seconds = elapsed)))
 
 def excelWriter():
     global currSheet, yearsTTM, row
     stoppingIndecies = [702, 1220, 1053, 73, 45, 148, 175, 792, 261, 182, 1498, 68, 680]
     counter = 0;
-    for row in rawDataBook['Miscellaneous'].iter_rows(3, 4):
-        currSheet = 'Miscellaneous'
-        tempWKST = core1['Miscellaneous']
-        sheetIndex = sheetNames.index('Miscellaneous')
-        #Check 1 and 3 first
-        if redFlagsS1(currSheet) and redFlagsS3(currSheet):
-            continueRunning = True
-            #SERIES 2 - More processing than 1 and 3. We don't wanna perform this twice. Errors handled inside here.
-            s2Indecies = [17, 19, 20, 25, 27, 29, 31, 33]
-            s2charSet = [['.'], ['.', '{', '}'], ['.', '(', ')', '{', '}'], ['.', '-', ' '], ['.', '-', ' '], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')']]
-            s2Data =  [[0]*18 for i in range(9)]
-            s2ErrorNumStart = 15
-            idNumStart = 1
+    sheetCounter = 0;
+    overallElementCounter = 1;
+    for currSheet in sheetNames:
+        currSheetStartTime = time.time()
+        prevSheetEndTime = originalStart
+        elementCounter = 1
+        for row in rawDataBook[currSheet].iter_rows(3, stoppingIndecies[sheetCounter] - 1):
+            print("Current Tick: ", row[1].value, tickSpaceAdder(row[1].value), "| ", elementCounter, " of ", stoppingIndecies[sheetCounter] - 3,\
+                   " in ", currSheet," | ", row[4].value, " | Cumulative Time Elapsed",\
+                    str(datetime.timedelta(seconds = round(time.time() - originalStart))), " | ", overallElementCounter, " of ", sum(stoppingIndecies) - 3 * len(stoppingIndecies), " Overall")
+            # currSheet = 'Miscellaneous'
+            tempWKST = core1[currSheet]
+            sheetIndex = sheetNames.index('Miscellaneous')
+            #Check 1 and 3 first
+            if redFlagsS1(currSheet) and redFlagsS3(currSheet):
+                continueRunning = True
+                #SERIES 2 - More processing than 1 and 3. We don't wanna perform this twice. Errors handled inside here.
+                s2Indecies = [17, 19, 20, 25, 27, 29, 31, 33]
+                s2charSet = [['.'], ['.', '{', '}'], ['.', '(', ')', '{', '}'], ['.', '-', ' '], ['.', '-', ' '], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')']]
+                s2Data =  [[0]*18 for i in range(9)]
+                s2ErrorNumStart = 15
+                idNumStart = 1
 
-            yearsTTM, continueRunning = yearProcessing(18)
-            # if continueRunning: highSeries, lowSeries, continueRunning = series2Processor(17, 15, 1, ['.'])
-            # if continueRunning: revenuePerShare, continueRunning = series2Processor(19, 16, 2, ['.', '{', '}'])
-            # if continueRunning: earningsPerShare, continueRunning = series2Processor(20, 17, 3, ['.', '(', ')', '{', '}'])
-            # if continueRunning: priceEarnings, continueRunning = series2Processor(25, 18, 4, ['.', '-', ' '])
-            # if continueRunning: divYield, continueRunning = series2Processor(27, 19, 5, ['.', '-', ' '])
-            # if continueRunning: operatingMargin, continueRunning = series2Processor(29, 20, 6, ['.', '-', ' ', '%', '(', ')'])
-            # if continueRunning: netProfitMargin, continueRunning = series2Processor(31, 21, 7, ['.', '-', ' ', '%', '(', ')'])
-            for i in range (1, len(s2Indecies) + 1):
-                if not continueRunning: break
-                if i == 1: 
-                    s2Data[i - 1], s2Data[i], continueRunning = series2Processor(s2Indecies[i - 1], s2ErrorNumStart, idNumStart, s2charSet[i - 1])
-                else:
-                    s2Data[i], continueRunning = series2Processor(s2Indecies[i - 1], s2ErrorNumStart, idNumStart, s2charSet[i - 1])
-                idNumStart += 1
-                s2ErrorNumStart += 1
-            print(s2Data)   
-            # if continueRunning: revenue, continueRunning = series2Special(28, 23, netProfitMargin)
- 
-            if continueRunning: 
-                #TAGS
-                for i in range(1,6):
-                    tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[i - 1].value
-                #SERIES 1
-                for i in range(7, 16):
-                    x = i - 2
-                    if i >= 8: x += 2
-                    if i >= 10: x += 1
-                    if i >= 15: i += 1
-                    if not i == 14:
-                        tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[x].value
-                    else: 
-                        high, low = row[x].value.split('/')
-                        tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = high
-                        tempWKST.cell(row = rowIndecies[sheetIndex], column = i + 1).value = low
-                #SERIES 2
-                s3startVal = 197
-                s2rowIndex = 0
-                for i in range(17, s3startVal - 18):
-                    if (i - 17) % 18 == 0 and not i == 17: s2rowIndex += 1
-                    tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = s2Data[s2rowIndex][(i - 17) % 18]
-                #SERIES 3
-                counter = 34;
-                for i in range (s3startVal, s3startVal + 5):
-                    if i == s3startVal + 3: counter += 2
-                    tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[counter].value
-                    counter += 1
-                rowIndecies[sheetIndex] += 1
-                if generateSheetToggle: core1.save("ProcessedSheets\\" + monthYR + "\\" + writeExcelFileName)
+                yearsTTM, continueRunning = yearProcessing(18)
+                for i in range (1, len(s2Indecies) + 1):
+                    if not continueRunning: break
+                    if i == 1: 
+                        s2Data[i - 1], s2Data[i], continueRunning = series2Processor(s2Indecies[i - 1], s2ErrorNumStart, idNumStart, s2charSet[i - 1])
+                    else:
+                        s2Data[i], continueRunning = series2Processor(s2Indecies[i - 1], s2ErrorNumStart, idNumStart, s2charSet[i - 1])
+                    idNumStart += 1
+                    s2ErrorNumStart += 1
+                #Tag this on for the last one
+                # if continueRunning: revenue, continueRunning = series2Special(28, 23, netProfitMargin)
+    
+                if continueRunning: 
+                    #TAGS
+                    for i in range(1,6):
+                        tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[i - 1].value
+                    #SERIES 1
+                    for i in range(7, 16):
+                        x = i - 2
+                        if i >= 8: x += 2
+                        if i >= 10: x += 1
+                        if i >= 15: i += 1
+                        if not i == 14:
+                            tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[x].value
+                        else: 
+                            high, low = row[x].value.split('/')
+                            tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = high
+                            tempWKST.cell(row = rowIndecies[sheetIndex], column = i + 1).value = low
+                    #SERIES 2
+                    s3startVal = 197
+                    s2rowIndex = 0
+                    for i in range(17, s3startVal - 18):
+                        if (i - 17) % 18 == 0 and not i == 17: s2rowIndex += 1
+                        tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = s2Data[s2rowIndex][(i - 17) % 18]
+                    #SERIES 3
+                    counter = 34;
+                    for i in range (s3startVal, s3startVal + 5):
+                        if i == s3startVal + 3: counter += 2
+                        tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[counter].value
+                        counter += 1
+                    rowIndecies[sheetIndex] += 1
+                    if generateSheetToggle: core1.save("ProcessedSheets\\" + monthYR + "\\" + writeExcelFileName)
+            elementCounter += 1
+            overallElementCounter += 1
+        currSheetEndTime = time.time()
+        print(currSheet, " Complete in ", currSheetEndTime - prevSheetEndTime, " \n")
+        prevSheetEndTime = currSheetStartTime
+        sheetCounter += 1
 
 def series2Special(revenueIndex, revenueError, netProfitMargin):
     if row[revenueIndex].value == None: return None, errorHandler(revenueError, currSheet)
@@ -202,6 +214,8 @@ def redFlagsS1(sheetName):
     performanceLength = list()
     errorNum = 0
     for i in performanceValues:
+        if row[i].value == None:
+            return errorHandler(782, sheetName)
         performanceLength.append(len(removeNonNumeric(row[i].value, additionalSet)))
         if i == 5 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there PE
             return errorHandler(errorNum, sheetName)
@@ -239,6 +253,8 @@ def redFlagsS3(sheetName):
     errorNum = 11
     errorNum2 = 100
     for i in performanceValues: 
+        if row[i].value == None:
+            return errorHandler(782, sheetName)
         if i == 35 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there Total Liabilities
             return errorHandler(errorNum, sheetName)
         if i == 36 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there Total Assets
@@ -369,7 +385,14 @@ def getErrorCode(input):
         101: "E101: Number of Employees below 50",
         102: "E102: % Held by institutions over 100",
         103: "E103: Daily trading volume below 150k",
+        782: "E782: Stock has Element set to 'None'",
         }
+
+def tickSpaceAdder(tick):
+    tickOffset = 6 - len(tick)
+    output = ""
+    output += ' ' * tickOffset
+    return output
 
     return switch.get(input, "")
 if __name__ == "__main__":
