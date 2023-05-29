@@ -389,7 +389,7 @@ def getErrorCode(input):
         }
 
 def tickSpaceAdder(tick):
-    tickOffset = 6 - len(tick)
+    tickOffset = 6 - len(str(tick))
     output = ""
     output += ' ' * tickOffset
     return output
