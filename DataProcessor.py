@@ -101,7 +101,7 @@ def excelWriter():
             elementCounter += 1
             overallElementCounter += 1
         currSheetEndTime = time.time()
-        print(currSheet, " Complete in ", currSheetEndTime - prevSheetEndTime, " \n")
+        print(currSheet, " Complete in ", str(datetime.timedelta(seconds = currSheetEndTime - prevSheetEndTime)), " \n")
         prevSheetEndTime = currSheetStartTime
         sheetCounter += 1
 
