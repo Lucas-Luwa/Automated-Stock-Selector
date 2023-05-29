@@ -4,6 +4,8 @@ import datetime
 import calendar
 import os
 import numpy
+from math import floor
+
 
 #Modify Toggles if desired
 wipeCurrVerNum, generateSheetToggle = True, True
@@ -15,7 +17,7 @@ def main():
     rawDataFileName = findRawDataFileName()
     rawDataBook = openpyxl.load_workbook(rawDataFileName)#Pull data from this 
     rawData = rawDataBook.active
-    coreName = "CoreExcelFiles/P2MasterTemplate5.28.23.xlsx"
+    coreName = "CoreExcelFiles/P2MasterTemplate5.29.23.xlsx"
     core1 = openpyxl.load_workbook(coreName)
     sheetNames = core1.sheetnames
     
@@ -27,7 +29,7 @@ def excelWriter():
     global currSheet, yearsTTM, row
     stoppingIndecies = [702, 1220, 1053, 73, 45, 148, 175, 792, 261, 182, 1498, 68, 680]
     counter = 0;
-    for row in rawDataBook['Miscellaneous'].iter_rows(39, 39):
+    for row in rawDataBook['Miscellaneous'].iter_rows(3, 4):
         currSheet = 'Miscellaneous'
         tempWKST = core1['Miscellaneous']
         sheetIndex = sheetNames.index('Miscellaneous')
@@ -35,20 +37,31 @@ def excelWriter():
         if redFlagsS1(currSheet) and redFlagsS3(currSheet):
             continueRunning = True
             #SERIES 2 - More processing than 1 and 3. We don't wanna perform this twice. Errors handled inside here.
-                #s2Indecies = [18, 17, 19, 20, 25, 27, 28, 29, 30, 31, 33]
+            s2Indecies = [17, 19, 20, 25, 27, 29, 31, 33]
+            s2charSet = [['.'], ['.', '{', '}'], ['.', '(', ')', '{', '}'], ['.', '-', ' '], ['.', '-', ' '], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')']]
+            s2Data =  [[0]*18 for i in range(9)]
+            s2ErrorNumStart = 15
+            idNumStart = 1
+
             yearsTTM, continueRunning = yearProcessing(18)
-            if continueRunning: highSeries, lowSeries, continueRunning = series2Processor(17, 15, 1, ['.'])
-            if continueRunning: revenuePerShare, continueRunning = series2Processor(19, 16, 2, ['.', '{', '}'])
-            if continueRunning: earningsPerShare, continueRunning = series2Processor(20, 17, 3, ['.', '(', ')', '{', '}'])
-            if continueRunning: priceEarnings, continueRunning = series2Processor(25, 18, 4, ['.', '-', ' '])
-            if continueRunning: divYield, continueRunning = series2Processor(27, 19, 5, ['.', '-', ' '])
-            #if continueRunning: Revenue, continueRunning = series2Processor(28, 20, 6, ['.', '-', ' '])
-            if continueRunning: operatingMargin, continueRunning = series2Processor(29, 20, 6, ['.', '-', ' ', '%', '(', ')'])
-            # if continueRunning: netProfit, continueRunning = series2Processor(30, 21, 7, ['.', '-', ' ', '%'])
-            if continueRunning: netProfitMargin, continueRunning = series2Processor(31, 22, 8, ['.', '-', ' ', '%', '(', ')'])
-            if continueRunning: revenue, netProfit, continueRunning = series2Special(28, 30, 23, 24, netProfitMargin)
-            #Problem with revenue calculation
-            #DO OP margin, net profit, npm roic, 
+            # if continueRunning: highSeries, lowSeries, continueRunning = series2Processor(17, 15, 1, ['.'])
+            # if continueRunning: revenuePerShare, continueRunning = series2Processor(19, 16, 2, ['.', '{', '}'])
+            # if continueRunning: earningsPerShare, continueRunning = series2Processor(20, 17, 3, ['.', '(', ')', '{', '}'])
+            # if continueRunning: priceEarnings, continueRunning = series2Processor(25, 18, 4, ['.', '-', ' '])
+            # if continueRunning: divYield, continueRunning = series2Processor(27, 19, 5, ['.', '-', ' '])
+            # if continueRunning: operatingMargin, continueRunning = series2Processor(29, 20, 6, ['.', '-', ' ', '%', '(', ')'])
+            # if continueRunning: netProfitMargin, continueRunning = series2Processor(31, 21, 7, ['.', '-', ' ', '%', '(', ')'])
+            for i in range (1, len(s2Indecies) + 1):
+                if not continueRunning: break
+                if i == 1: 
+                    s2Data[i - 1], s2Data[i], continueRunning = series2Processor(s2Indecies[i - 1], s2ErrorNumStart, idNumStart, s2charSet[i - 1])
+                else:
+                    s2Data[i], continueRunning = series2Processor(s2Indecies[i - 1], s2ErrorNumStart, idNumStart, s2charSet[i - 1])
+                idNumStart += 1
+                s2ErrorNumStart += 1
+            print(s2Data)   
+            # if continueRunning: revenue, continueRunning = series2Special(28, 23, netProfitMargin)
+ 
             if continueRunning: 
                 #TAGS
                 for i in range(1,6):
@@ -65,42 +78,50 @@ def excelWriter():
                         high, low = row[x].value.split('/')
                         tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = high
                         tempWKST.cell(row = rowIndecies[sheetIndex], column = i + 1).value = low
+                #SERIES 2
+                s3startVal = 197
+                s2rowIndex = 0
+                for i in range(17, s3startVal - 18):
+                    if (i - 17) % 18 == 0 and not i == 17: s2rowIndex += 1
+                    tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = s2Data[s2rowIndex][(i - 17) % 18]
                 #SERIES 3
                 counter = 34;
-                for i in range (215, 220):
-                    if i == 218: counter += 2
+                for i in range (s3startVal, s3startVal + 5):
+                    if i == s3startVal + 3: counter += 2
                     tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[counter].value
                     counter += 1
                 rowIndecies[sheetIndex] += 1
                 if generateSheetToggle: core1.save("ProcessedSheets\\" + monthYR + "\\" + writeExcelFileName)
 
-def series2Special(revenueIndex, profMargIndex, revenueError, profMargError, netProfitMargin):
+def series2Special(revenueIndex, revenueError, netProfitMargin):
     if row[revenueIndex].value == None: return None, errorHandler(revenueError, currSheet)
-    if row[profMargIndex].value == None: return None, errorHandler(profMargError, currSheet)
     if row[revenueIndex].value[0] == ')': row[revenueIndex].value = row[revenueIndex].value[1:] # Temporary until infinity issue is fixed
-    if row[profMargIndex].value[0] == ')': row[profMargIndex].value = row[profMargIndex].value[1:] # Temporary until infinity issue is fixed
-    revOutput = [-1] * len(yearsTTM)
-    profMargOutput = [-1] * len(yearsTTM)
-    individualValues1 = list()
-    individualValues2 = list()
+    revOutput = [None] * len(yearsTTM)
+    individualValues = list()
     rawNumbersRevenue = removeNonNumeric(row[revenueIndex].value, ['(', ')']) 
-    rawNumbersProfitMargin = removeNonNumeric(row[profMargIndex].value, ['(', ')']) 
     if len(rawNumbersRevenue) == 0: return None, errorHandler(revenueError, currSheet)
-    if len(rawNumbersProfitMargin) == 0: return None, errorHandler(profMargError, currSheet)
-    numItems = len(netProfitMargin) - netProfitMargin.count(-1)
-    if len(rawNumbersRevenue) / numItems - round(len(rawNumbersRevenue) / numItems) == 0.00:
-        spliceIndex = int(len(rawNumbersRevenue) / numItems)
-        while len(rawNumbersRevenue) > 0:
-            individualValues1.append(rawNumbersRevenue[0:spliceIndex])
-            rawNumbersRevenue = rawNumbersRevenue[spliceIndex:]
-        # while len(rawNumbersProfitMargin) > 0:
-        #     pass 
-    else: #Guessing time...
-        pass
-
-
-
-    return revOutput, profMargOutput, True
+    numItems = len(netProfitMargin) - netProfitMargin.count(None)
+    targetAvg = len(rawNumbersRevenue)/numItems
+    numEach = floor(targetAvg)
+    numDigits = [numEach] * numItems
+    index = 0
+    print(rawNumbersRevenue)
+    print(numItems)
+    print(targetAvg)
+    print(numDigits)
+    while (sum(numDigits)/numItems) < targetAvg:
+        numDigits[numItems - index] +=1
+        index += 1
+    index = 0
+    for i in range (0, len(numDigits)):
+        individualValues.append(rawNumbersRevenue[0:numDigits[i]])
+        rawNumbersRevenue = rawNumbersRevenue[numDigits[i]:]
+        
+    for i in range(0, len(yearsTTM)):
+        if yearsTTM[i] == 1 and len(individualValues) > 0:
+            revOutput[i] = individualValues.pop(len(individualValues) - 1)
+    print(revOutput)
+    return revOutput, True
 
 
 def series2Processor(rowIndex, errorNum, idNum, additionalSet):
@@ -108,8 +129,8 @@ def series2Processor(rowIndex, errorNum, idNum, additionalSet):
     if row[rowIndex].value[0] == ')' and idNum == 3: row[rowIndex].value = row[rowIndex].value[1:] # Temporary until infinity issue is fixed
     if row[rowIndex].value[0:2] == ')%' and idNum == 8: row[rowIndex].value = row[rowIndex].value[2:] # Temporary until infinity issue is fixed
 
-    output = [-1] * len(yearsTTM)
-    if idNum == 1: output2 = [-1] * len(yearsTTM)
+    output = [None] * len(yearsTTM)
+    if idNum == 1: output2 = [None] * len(yearsTTM)
     individualValues = list()
     rawNumbers = removeNonNumeric(row[rowIndex].value, additionalSet) 
     if len(rawNumbers) == 0 and not idNum == 5: return None, errorHandler(errorNum, currSheet)
@@ -123,7 +144,7 @@ def series2Processor(rowIndex, errorNum, idNum, additionalSet):
     return output, True
 
 def series2ProcessorCondHelper(idNum, individualValues, rawNumbers):
-    if idNum in [6, 8]:
+    if idNum in [6, 7, 8]:
         if rawNumbers[0] == '-':
             individualValues.append(str(0.0))
             rawNumbers = rawNumbers[3:]
