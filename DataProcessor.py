@@ -6,9 +6,8 @@ import os
 import numpy
 from math import floor
 
-
 #Modify Toggles if desired
-wipeCurrVerNum, generateSheetToggle = True, True
+wipeCurrVerNum, generateSheetToggle = False, False
 
 def main():
     global sheetNames, writeExcelFileName, rawDataBook, core1, rowIndecies, originalStart
@@ -36,105 +35,220 @@ def excelWriter():
     sheetCounter = 0;
     overallElementCounter = 1;
     for currSheet in sheetNames:
-        currSheetStartTime = time.time()
-        prevSheetEndTime = originalStart
-        elementCounter = 1
-        for row in rawDataBook[currSheet].iter_rows(3, stoppingIndecies[sheetCounter] - 1):
-            print("Ticker Symbol: ", row[1].value, tickSpaceAdder(row[1].value), "| ", elementCounter, " of ", stoppingIndecies[sheetCounter] - 3,\
-                   " in ", currSheet," | ", row[4].value, " | Cumulative Time Elapsed",\
-                    str(datetime.timedelta(seconds = round(time.time() - originalStart))), " | ", overallElementCounter, " of ", sum(stoppingIndecies) - 3 * len(stoppingIndecies), " Overall")
-            # currSheet = 'Miscellaneous'
-            tempWKST = core1[currSheet]
-            sheetIndex = sheetNames.index('Miscellaneous')
-            #Check 1 and 3 first
-            if redFlagsS1(currSheet) and redFlagsS3(currSheet):
-                continueRunning = True
-                #SERIES 2 - More processing than 1 and 3. We don't wanna perform this twice. Errors handled inside here.
-                s2Indecies = [17, 19, 20, 25, 27, 29, 31, 33]
-                s2charSet = [['.'], ['.', '{', '}'], ['.', '(', ')', '{', '}'], ['.', '-', ' '], ['.', '-', ' '], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')']]
-                s2Data =  [[0]*18 for i in range(9)]
-                s2ErrorNumStart = 15
-                idNumStart = 1
+        if currSheet == 'Miscellaneous': #Use for  testing e.g. currSheet == 'Miscellaneous'
+            currSheetStartTime = time.time()
+            prevSheetEndTime = originalStart
+            elementCounter = 1
+            #for row in rawDataBook[currSheet].iter_rows(3, stoppingIndecies[sheetCounter] - 1):
+            for row in rawDataBook[currSheet].iter_rows(34,34):
+                print("Ticker Symbol: ", row[1].value, tickSpaceAdder(row[1].value), "| ", elementCounter, " of ", stoppingIndecies[sheetCounter] - 3,\
+                    " in ", currSheet," | ", row[4].value, " | Cumulative Time Elapsed",\
+                        str(datetime.timedelta(seconds = round(time.time() - originalStart))), " | ", overallElementCounter, " of ", sum(stoppingIndecies) - 3 * len(stoppingIndecies), " Overall")
+                # currSheet = 'Miscellaneous'
+                tempWKST = core1[currSheet]
+                sheetIndex = sheetNames.index('Miscellaneous')
+                #Check 1 and 3 first
+                if redFlagsS1(currSheet) and redFlagsS3(currSheet):
+                    continueRunning = True
+                    #SERIES 2 - More processing than 1 and 3. We don't wanna perform this twice. Errors handled inside here.
+                    s2Indecies = [17, 19, 20, 25, 27, 29, 31, 33]
+                    s2charSet = [['.'], ['.', '{', '}'], ['.', '(', ')', '{', '}'], ['.', '-', ' '], ['.', '-', ' '], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')']]
+                    s2Data =  [[0]*18 for i in range(9)]
+                    s2ErrorNumStart = 15
+                    idNumStart = 1
 
-                yearsTTM, continueRunning = yearProcessing(18)
-                for i in range (1, len(s2Indecies) + 1):
-                    if not continueRunning: break
-                    if i == 1: 
-                        s2Data[i - 1], s2Data[i], continueRunning = series2Processor(s2Indecies[i - 1], s2ErrorNumStart, idNumStart, s2charSet[i - 1])
-                    else:
-                        s2Data[i], continueRunning = series2Processor(s2Indecies[i - 1], s2ErrorNumStart, idNumStart, s2charSet[i - 1])
-                    idNumStart += 1
-                    s2ErrorNumStart += 1
-                #Tag this on for the last one
-                # if continueRunning: revenue, continueRunning = series2Special(28, 23, netProfitMargin)
-    
-                if continueRunning: 
-                    #TAGS
-                    for i in range(1,6):
-                        tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[i - 1].value
-                    #SERIES 1
-                    for i in range(7, 16):
-                        x = i - 2
-                        if i >= 8: x += 2
-                        if i >= 10: x += 1
-                        if i >= 15: i += 1
-                        if not i == 14:
-                            tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[x].value
-                        else: 
-                            high, low = row[x].value.split('/')
-                            tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = high
-                            tempWKST.cell(row = rowIndecies[sheetIndex], column = i + 1).value = low
-                    #SERIES 2
-                    s3startVal = 197
-                    s2rowIndex = 0
-                    for i in range(17, s3startVal - 18):
-                        if (i - 17) % 18 == 0 and not i == 17: s2rowIndex += 1
-                        tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = s2Data[s2rowIndex][(i - 17) % 18]
-                    #SERIES 3
-                    counter = 34;
-                    for i in range (s3startVal, s3startVal + 5):
-                        if i == s3startVal + 3: counter += 2
-                        tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[counter].value
-                        counter += 1
-                    rowIndecies[sheetIndex] += 1
-                    if generateSheetToggle: core1.save("ProcessedSheets\\" + monthYR + "\\" + writeExcelFileName)
-            elementCounter += 1
-            overallElementCounter += 1
-        currSheetEndTime = time.time()
-        print(currSheet, " Complete in ", str(datetime.timedelta(seconds = currSheetEndTime - prevSheetEndTime)), " \n")
-        prevSheetEndTime = currSheetStartTime
-        sheetCounter += 1
+                    yearsTTM, continueRunning = yearProcessing(18)
+                    for i in range (1, len(s2Indecies) + 1):
+                        if not continueRunning: break
+                        if i == 1: 
+                            s2Data[i - 1], s2Data[i], continueRunning = series2Processor(s2Indecies[i - 1], s2ErrorNumStart, idNumStart, s2charSet[i - 1])
+                        else:
+                            s2Data[i], continueRunning = series2Processor(s2Indecies[i - 1], s2ErrorNumStart, idNumStart, s2charSet[i - 1])
+                        idNumStart += 1
+                        s2ErrorNumStart += 1
+                    #Tag this on for the last one
+                    if continueRunning: revenue, continueRunning = series2SmartSplitter(28, 23, s2Data[7], 30)
+                    if continueRunning: print(revenue)
+                    if continueRunning: 
+                        #TAGS
+                        for i in range(1,6):
+                            tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[i - 1].value
+                        #SERIES 1
+                        for i in range(7, 16):
+                            x = i - 2
+                            if i >= 8: x += 2
+                            if i >= 10: x += 1
+                            if i >= 15: i += 1
+                            if not i == 14:
+                                tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[x].value
+                            else: 
+                                high, low = row[x].value.split('/')
+                                tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = high
+                                tempWKST.cell(row = rowIndecies[sheetIndex], column = i + 1).value = low
+                        #SERIES 2
+                        s3startVal = 197
+                        s2rowIndex = 0
+                        for i in range(17, s3startVal - 18):
+                            if (i - 17) % 18 == 0 and not i == 17: s2rowIndex += 1
+                            tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = s2Data[s2rowIndex][(i - 17) % 18]
+                        #SERIES 3
+                        counter = 34;
+                        for i in range (s3startVal, s3startVal + 5):
+                            if i == s3startVal + 3: counter += 2
+                            tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[counter].value
+                            counter += 1
+                        rowIndecies[sheetIndex] += 1
+                        if generateSheetToggle: core1.save("ProcessedSheets\\" + monthYR + "\\" + writeExcelFileName)
+                elementCounter += 1
+                overallElementCounter += 1
+            currSheetEndTime = time.time()
+            print(currSheet, " Complete in ", str(datetime.timedelta(seconds = round(currSheetEndTime - prevSheetEndTime))), " \n")
+            prevSheetEndTime = currSheetStartTime
+            sheetCounter += 1
 
-def series2Special(revenueIndex, revenueError, netProfitMargin):
+def series2SmartSplitter(revenueIndex, revenueError, netProfitMargin, netProfitIndex):
     if row[revenueIndex].value == None: return None, errorHandler(revenueError, currSheet)
     if row[revenueIndex].value[0] == ')': row[revenueIndex].value = row[revenueIndex].value[1:] # Temporary until infinity issue is fixed
+    if row[netProfitIndex].value[0] == ')': row[netProfitIndex].value = row[netProfitIndex].value[1:] # Temporary until infinity issue is fixed
     revOutput = [None] * len(yearsTTM)
-    individualValues = list()
-    rawNumbersRevenue = removeNonNumeric(row[revenueIndex].value, ['(', ')']) 
+    revenueValues = list(); profitValues = list(); possibleValues = list(); outputR = [None] * len(yearsTTM); outputP = [None] * len(yearsTTM)
+    rawNumbersRevenue = removeNonNumeric(row[revenueIndex].value, ['(', ')', ',']) 
+    rawNumbersProfit = removeNonNumeric(row[netProfitIndex].value, ['(', ')', ',']) 
     if len(rawNumbersRevenue) == 0: return None, errorHandler(revenueError, currSheet)
-    numItems = len(netProfitMargin) - netProfitMargin.count(None)
-    targetAvg = len(rawNumbersRevenue)/numItems
-    numEach = floor(targetAvg)
-    numDigits = [numEach] * numItems
-    index = 0
-    print(rawNumbersRevenue)
-    print(numItems)
-    print(targetAvg)
-    print(numDigits)
-    while (sum(numDigits)/numItems) < targetAvg:
-        numDigits[numItems - index] +=1
-        index += 1
-    index = 0
-    for i in range (0, len(numDigits)):
-        individualValues.append(rawNumbersRevenue[0:numDigits[i]])
-        rawNumbersRevenue = rawNumbersRevenue[numDigits[i]:]
-        
-    for i in range(0, len(yearsTTM)):
-        if yearsTTM[i] == 1 and len(individualValues) > 0:
-            revOutput[i] = individualValues.pop(len(individualValues) - 1)
-    print(revOutput)
-    return revOutput, True
+    if len(rawNumbersProfit) == 0: return None, errorHandler(revenueError, currSheet)
 
+    expNumElemGen = len(netProfitMargin) - netProfitMargin.count(None)
+    netProfitMargin = removeNone(netProfitMargin) # This gives us exactly how much we need. 
+    #Could add additional check for comma values later.
+    for i in range (0, expNumElemGen):
+        print("\nstartnewrun")
+        print(rawNumbersProfit)
+        print(rawNumbersRevenue)
+        possibleValues.clear()
+        numberOnlyRevenue = removeNonNumeric(rawNumbersRevenue, [])
+        numberOnlyProfit = removeNonNumeric(rawNumbersProfit, [])
+        currTargVal = removeNonNumeric(netProfitMargin[i], ['.'])
+        #For all -> DO NOT GO OUT OF BOUNDS!
+        #Case 1: Revenue has Comma + Net Profit has (). Check 4-6 for R
+        if len(rawNumbersRevenue) >= 5 and rawNumbersRevenue[len(rawNumbersRevenue) - 1 - 3] == ',' and rawNumbersProfit[len(rawNumbersProfit) - 1] == ')':
+            print("WE AT 1")
+            profitValues.append(rawNumbersProfit[rawNumbersProfit.rindex('('):] )
+            proposedProfitValue = removeNonNumeric(rawNumbersProfit[rawNumbersProfit.rindex('('):],[])
+            rawNumbersProfit = rawNumbersProfit[:rawNumbersProfit.rindex('(')]
+            for i in range (4, 7):
+                if i > len(numberOnlyRevenue): break
+                if int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:])  == 0: continue
+                print("i ", i, " ", numberOnlyRevenue [len(str(numberOnlyRevenue)) - i:])
+                possibleValues.append((abs(int( proposedProfitValue)/int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) - float(currTargVal)/100), i))
+            numDigits = min(possibleValues)[1]
+            revenueValues.append(numberOnlyRevenue[len(numberOnlyRevenue) - numDigits:])#-1 removed on 5.30.23 at 1:02 AM ET
+            rawNumbersRevenue = rawNumbersRevenue[:len(rawNumbersRevenue) - numDigits - 1]
+        #Case 2: Revenue has no comma + Net Profit has (). Check 1-3 for R
+        elif rawNumbersProfit[len(rawNumbersProfit) - 1] == ')':
+            print("WE AT 2")
+            profitValues.append(rawNumbersProfit[rawNumbersProfit.rindex('('):] )
+            proposedProfitValue = removeNonNumeric(rawNumbersProfit[rawNumbersProfit.rindex('('):],[])
+            rawNumbersProfit = rawNumbersProfit[:rawNumbersProfit.rindex('(')]
+            print(proposedProfitValue)
+            for i in range (1, 4):
+                if i > len(numberOnlyRevenue): break;
+                if int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) == 0: continue
+                print("i ", i, " ", numberOnlyRevenue [len(str(numberOnlyRevenue)) - i:])
+                possibleValues.append((abs(int( proposedProfitValue)/int(numberOnlyRevenue \
+                    [len(str(numberOnlyRevenue)) - i:]) - float(currTargVal)/100), i))
+            numDigits = min(possibleValues)[1]
+            print(possibleValues)
+            revenueValues.append(numberOnlyRevenue[len(numberOnlyRevenue) - numDigits:])
+            rawNumbersRevenue = rawNumbersRevenue[:len(rawNumbersRevenue) - numDigits]
+        #Case 3: Revenue has Comma + Net Profit has comma. Check 4-6 for both
+        elif len(rawNumbersRevenue) >= 5 and rawNumbersRevenue[len(rawNumbersRevenue) - 1 - 3] == ',' \
+            and  len(rawNumbersProfit) >= 5 and rawNumbersProfit[len(rawNumbersProfit) - 1 - 3] == ',':
+            print("WE AT 3")
+            for j in range (4, 7): # Profit
+                for i in range (4, 7): # Revenue
+                    if int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) == 0: continue
+                    if i <= len(numberOnlyRevenue) and j <= len(numberOnlyRevenue):
+                        print("i ", i, " j ", j, " ", numberOnlyProfit[len(str(numberOnlyProfit)) - j:])
+                        possibleValues.append((abs(int( numberOnlyProfit[len(str(numberOnlyProfit)) - j:])/ \
+                            int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) - float(currTargVal)/100), i, j))
+            dummy, numRevenue, numProfit = min(possibleValues)
+            revenueValues.append(numberOnlyRevenue[len(numberOnlyRevenue) - numRevenue:])#-1 removed on 5.30.23 at 1:02 AM ET
+            rawNumbersRevenue = rawNumbersRevenue[:len(rawNumbersRevenue) - numRevenue - 1]
+            profitValues.append(numberOnlyProfit[len(numberOnlyProfit) - numProfit:])#-1 removed on 5.30.23 at 1:02 AM ET
+            rawNumbersProfit = rawNumbersProfit[:len(rawNumbersProfit) - numProfit - 1]
+        #Case 4: Revenue has Comma + Net Profit has no comma. Check 4-6 for R and 1-3 for NP
+        elif len(rawNumbersRevenue) >= 5 and rawNumbersRevenue[len(rawNumbersRevenue) - 1 - 3] == ',':
+            print("WE AT 4")
+            for j in range (1, 4): # Profit
+                for i in range (4, 7): # Revenue
+                    if int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) == 0: continue
+                    if i <= len(numberOnlyRevenue) and j <= len(numberOnlyRevenue):
+                        print("i ", i, " j ", j, " ", int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]))
+                        print("my curr targ ", currTargVal)
+                        possibleValues.append((abs(int( numberOnlyProfit[len(str(numberOnlyProfit)) - j:])/ \
+                            int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) - float(currTargVal)/100), i, j))
+            dummy, numRevenue, numProfit = min(possibleValues)
+            print(possibleValues)
+            revenueValues.append(numberOnlyRevenue[len(numberOnlyRevenue) - numRevenue:])#Add in -1 if you're not doing number only
+            rawNumbersRevenue = rawNumbersRevenue[:len(rawNumbersRevenue) - numRevenue - 1]
+            profitValues.append(numberOnlyProfit[len(numberOnlyProfit) - numProfit:])
+            rawNumbersProfit = rawNumbersProfit[:len(rawNumbersProfit) - numProfit]
+        #Case 5: Revenue has no comma + Net Profit has comma. Check 1-3 for R and 4-6 for NP
+        elif len(rawNumbersProfit) >= 5 and rawNumbersProfit[len(rawNumbersProfit) - 1 - 3] == ',':
+            print("WE AT 5")
+            for j in range (4, 7): # Profit
+                for i in range (1, 4): # Revenue
+                    if int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) == 0: continue
+                    if i <= len(numberOnlyRevenue) and j <= len(numberOnlyRevenue):
+                        print("i ", i, " j ", j, " ", numberOnlyProfit[len(str(numberOnlyProfit)) - j:])
+                        possibleValues.append((abs(int( numberOnlyProfit[len(str(numberOnlyProfit)) - j:])/ \
+                            int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) - float(currTargVal)/100), i, j))
+            dummy, numRevenue, numProfit = min(possibleValues)
+            revenueValues.append(numberOnlyRevenue[len(numberOnlyRevenue) - numRevenue:])
+            rawNumbersRevenue = rawNumbersRevenue[:len(rawNumbersRevenue) - numRevenue]
+            profitValues.append(numberOnlyProfit[len(numberOnlyProfit) - numProfit:])#-1 removed on 5.30.23 at 1:02 AM ET
+            rawNumbersProfit = rawNumbersProfit[:len(rawNumbersProfit) - numProfit - 1]
+        #Case 6: Revenue has no comma + Net Profit has no comma. Check 1-3 for both
+        else:
+            print("WE AT 6")
+            for j in range (1, 4): # Profit
+                for i in range (1, 4): # Revenue
+                    if int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) == 0: continue
+                    if i <= len(numberOnlyRevenue) and j <= len(numberOnlyRevenue):
+                        print("i ", i, " j ", j, " ", numberOnlyProfit[len(str(numberOnlyProfit)) - j:])
+                        possibleValues.append((abs(int( numberOnlyProfit[len(str(numberOnlyProfit)) - j:])/ \
+                            int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) - float(currTargVal)/100), i, j))
+            dummy, numRevenue, numProfit = min(possibleValues)
+            print(possibleValues)
+            revenueValues.append(numberOnlyRevenue[len(numberOnlyRevenue) - numRevenue:])
+            rawNumbersRevenue = rawNumbersRevenue[:len(rawNumbersRevenue) - numRevenue]
+            profitValues.append(numberOnlyProfit[len(numberOnlyProfit) - numProfit:])
+            rawNumbersProfit = rawNumbersProfit[:len(rawNumbersProfit) - numProfit]
+        #Debugger
+        print("rv", revenueValues)
+        print("pv", profitValues)
+        print("rnp", rawNumbersProfit)
+        print("rnv", rawNumbersRevenue)
+        print("nop", numberOnlyProfit)
+        print("end of sequence")
+
+
+    for i in range(0, len(yearsTTM)):
+        if yearsTTM[i] == 1 and len(revenueValues) > 0:
+            outputR[i] = revenueValues.pop(0)
+            outputP[i] = profitValues.pop(0)
+    print(outputP)
+    print(outputR)
+    #return outputR, outputP, True
+    return outputR, True
+
+
+def removeNone(currlist):
+    temp = list()
+    for i in range(0, len(currlist)):
+        if not currlist[i] == None:
+            temp.append(currlist[i])
+    return temp
 
 def series2Processor(rowIndex, errorNum, idNum, additionalSet):
     if row[rowIndex].value == None: return None, errorHandler(errorNum, currSheet)
