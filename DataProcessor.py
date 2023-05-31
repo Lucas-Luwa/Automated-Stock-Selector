@@ -35,7 +35,7 @@ def excelWriter():
     sheetCounter = 0;
     overallElementCounter = 1;
     for currSheet in sheetNames:
-        if currSheet == 'Miscellaneous': #Use for  testing e.g. currSheet == 'Miscellaneous'
+        if True: #Use for  testing e.g. currSheet == 'Miscellaneous'
             currSheetStartTime = time.time()
             prevSheetEndTime = originalStart
             elementCounter = 1
