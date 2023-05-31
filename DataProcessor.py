@@ -53,8 +53,8 @@ def excelWriter():
                     #SERIES 2 - More processing than 1 and 3. We don't wanna perform this twice. Errors handled inside here.
                     s2Indecies = [17, 19, 20, 25, 27, 29, 31, 33]
                     s2charSet = [['.'], ['.', '{', '}'], ['.', '(', ')', '{', '}'], ['.', '-', ' '], ['.', '-', ' '], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')']]
-                    s2Data =  [[0]*18 for i in range(9)]
-                    s2ErrorNumStart = 15
+                    s2Data =  [[0]*18 for i in range(10)]
+                    s2ErrorNumStart = 201
                     idNumStart = 1
 
                     yearsTTM, continueRunning = yearProcessing(18)
@@ -67,8 +67,8 @@ def excelWriter():
                         idNumStart += 1
                         s2ErrorNumStart += 1
                     #Tag this on for the last one
-                    if continueRunning: revenue, continueRunning = series2SmartSplitter(28, 23, s2Data[7], 30)
-                    s2Data[8] = revenue
+                    if continueRunning: revenue, continueRunning = series2SpecialSplitter(28, 200, s2Data[7], 30)
+                    s2Data[9] = revenue
                     if continueRunning: 
                         #TAGS
                         for i in range(1,6):
@@ -106,7 +106,7 @@ def excelWriter():
             prevSheetEndTime = currSheetStartTime
             sheetCounter += 1
 
-def series2SmartSplitter(revenueIndex, revenueError, netProfitMargin, netProfitIndex):
+def series2SpecialSplitter(revenueIndex, revenueError, netProfitMargin, netProfitIndex):
     if row[revenueIndex].value == None: return None, errorHandler(revenueError, currSheet)
     if row[revenueIndex].value[0] == ')': row[revenueIndex].value = row[revenueIndex].value[1:] # Temporary until infinity issue is fixed
     if row[netProfitIndex].value[0] == ')': row[netProfitIndex].value = row[netProfitIndex].value[1:] # Temporary until infinity issue is fixed
@@ -230,7 +230,7 @@ def series2SmartSplitter(revenueIndex, revenueError, netProfitMargin, netProfitI
     except:
         return s2zeroHandler(currRevList=revenueValues)
     
-    print(rawNumbersRevenue)
+    # print(rawNumbersRevenue)
     if len(rawNumbersRevenue) > 0: return s2zeroHandler(currRevList=revenueValues)
 
     for i in range(0, len(yearsTTM)):
@@ -292,6 +292,9 @@ def series2ProcessorCondHelper(idNum, individualValues, rawNumbers):
         if rawNumbers[0] == '-':
             individualValues.append(str(0.0))
             rawNumbers = rawNumbers[3:]
+        elif rawNumbers[0] == '{':
+            individualValues.append(rawNumbers[0:rawNumbers.index('}') + 1])
+            rawNumbers = rawNumbers[rawNumbers.index('}') + 1:]
         else:
             individualValues.append(rawNumbers[0:rawNumbers.index('.') + 2])
             rawNumbers = rawNumbers[rawNumbers.index('.') + 2:]
@@ -315,7 +318,7 @@ def series2ProcessorCondHelper(idNum, individualValues, rawNumbers):
     return individualValues, rawNumbers
 
 def yearProcessing(rowIndex):
-    errorNum = 14
+    errorNum = 50
     markers = [0] * 18
     startVal = 2023
     for i in range(0, 18):
@@ -360,10 +363,10 @@ def redFlagsS1(sheetName):
             return errorHandler(errorNum + 8, sheetName)
         if i == 16 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there daily trade volume
             return errorHandler(errorNum + 9, sheetName)
-        if i == 16 and float(removeNonNumeric(row[i].value, additionalSet)) < .15: #Dailhy trade volume below 150,000
-            return errorHandler(103, sheetName)
+        if i == 16 and float(removeNonNumeric(row[i].value, additionalSet)) < .15: #Daily trade volume below 150,000
+            return errorHandler(10, sheetName)
         if i == 16 and performanceLength.count(0) >= 6: # 6 or more fields missing in Series
-            return errorHandler(errorNum + 10, sheetName)
+            return errorHandler(errorNum + 11, sheetName)
     return True
 
 #assets less than 1000 eliminated maybe change this
@@ -371,8 +374,7 @@ def redFlagsS3(sheetName):
     performanceValues = [34, 35, 40] 
     additionalSet = ['-', '.'] 
     #Total Liabilities, Total Assets and Number of Employees
-    errorNum = 11
-    errorNum2 = 100
+    errorNum = 100
     for i in performanceValues: 
         if row[i].value == None:
             return errorHandler(782, sheetName)
@@ -381,9 +383,9 @@ def redFlagsS3(sheetName):
         if i == 36 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there Total Assets
             return errorHandler(errorNum + 1, sheetName)
         if i == 40 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Number of employees missing
-            return errorHandler(errorNum2, sheetName) 
-        if i == 40 and int(removeNonNumeric(row[i].value, additionalSet)) < 50: #Short percentage is over 20 percent...
-            return errorHandler(errorNum2 + 1, sheetName)
+            return errorHandler(errorNum + 2, sheetName) 
+        if i == 40 and int(removeNonNumeric(row[i].value, additionalSet)) < 50: #Number of Employees under 50 
+            return errorHandler(errorNum + 3, sheetName)
         # if i == 36 and float(removeNonNumeric(row[i].value, additionalSet)) < 10: #Assets less than $10 Million
         #     return errorHandler(errorNum + 2, sheetName)
     return True
@@ -489,32 +491,31 @@ def getErrorCode(input):
         7: "E7: Percent held by institutions is missing",
         8: "E8: 52 Week High and Low missing",
         9: "E9: Daily trade volume missing",
-        10: "E10: Missing 6 or more of Series 1 fields",
-        11: "E11: Missing Total Liabilities",
-        12: "E12: Missing Total Assets",
-        13: "E13: Total assets are below $1000",
-        14: "E14: Years/TTM Missing",
-        15: "E15: Yearly High/Low Values Missing",
-        16: "E16: RPS Values Missing",
-        17: "E17: EPS Values Missing",
-        18: "E18: P/E Values Missing",
-        19: "E19: Dividend Yield Value Missing",
-        34: "E34: Missing 6 or more of Series 2 fields",
-        35: "E35: Series 3 Value is missing",
-        36: "E36: ROIC value is below (last 3, last 5 avg and all avg)",
-        100: "E100: Number of Employees Missing",
-        101: "E101: Number of Employees below 50",
-        102: "E102: % Held by institutions over 100",
-        103: "E103: Daily trading volume below 150k",
+        10: "E10: Daily trading volume below 150k",
+        11: "E11: Missing 6 or more of Series 1 fields",
+        50: "E50: Years/TTM Missing",
+        100: "E100: Missing Total Liabilities",
+        101: "E101: Missing Total Assets",
+        102: "E102: Number of Employees Missing",
+        103: "E103: Number of Employees under 50",
+        200: "E200: Revenue Values Missing",
+        201: "E201: High/Low Values Missing",
+        202: "E202: Revenue Per Share Values Missing",
+        203: "E203: Earnings Per Share Values Missing",
+        204: "E204: P/E Ratio Values Missing",
+        205: "E205: Dividend Yield Values Missing",
+        206: "E206: Operating Margin % Missing",
+        207: "E207: Net Profit Margin % Missing",
+        208: "E208: ROIC Missing",
         782: "E782: Stock has Element set to 'None'",
         }
+    return switch.get(input, "")
+
 
 def tickSpaceAdder(tick):
     tickOffset = 6 - len(str(tick))
     output = ""
     output += ' ' * tickOffset
     return output
-
-    return switch.get(input, "")
 if __name__ == "__main__":
     main()
