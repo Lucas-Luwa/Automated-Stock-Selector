@@ -35,7 +35,7 @@ def excelWriter():
     sheetCounter = 0;
     overallElementCounter = 1;
     for currSheet in sheetNames:
-        if 1: #Use for  testing e.g. currSheet == 'Miscellaneous'
+        if not currSheet == 'ELIMINATED': #Use for  testing e.g. currSheet == 'Miscellaneous'
             currSheetStartTime = time.time()
             prevSheetEndTime = originalStart
             elementCounter = 1
@@ -46,7 +46,8 @@ def excelWriter():
                         str(datetime.timedelta(seconds = round(time.time() - originalStart))), " | ", overallElementCounter, " of ", sum(stoppingIndecies) - 3 * len(stoppingIndecies), " Overall")
                 # currSheet = 'Miscellaneous'
                 tempWKST = core1[currSheet]
-                sheetIndex = sheetNames.index('Miscellaneous')
+                # sheetIndex = sheetNames.index('Miscellaneous')
+                sheetIndex = sheetNames.index(currSheet)
                 #Check 1 and 3 first
                 if redFlagsS1(currSheet) and redFlagsS3(currSheet):
                     continueRunning = True
