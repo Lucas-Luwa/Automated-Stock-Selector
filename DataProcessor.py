@@ -227,13 +227,6 @@ def series2SmartSplitter(revenueIndex, revenueError, netProfitMargin, netProfitI
                 rawNumbersRevenue = rawNumbersRevenue[:len(rawNumbersRevenue) - numRevenue]
                 profitValues.append(numberOnlyProfit[len(numberOnlyProfit) - numProfit:])
                 rawNumbersProfit = rawNumbersProfit[:len(rawNumbersProfit) - numProfit]
-            #Debugger
-            # print("rv", revenueValues)
-            # print("pv", profitValues)
-            # print("rnp", rawNumbersProfit)
-            # print("rnv", rawNumbersRevenue)
-            # print("nop", numberOnlyProfit)
-            # print("end of sequence")
     except:
         return s2zeroHandler(currRevList=revenueValues)
     
