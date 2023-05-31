@@ -359,15 +359,15 @@ def redFlagsS1(sheetName):
         if i == 12 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there Institution %
             return errorHandler(errorNum + 7, sheetName)
         if i == 12 and float(removeNonNumeric(row[i].value, additionalSet)) > 95: #Institution Value too %
-            return errorHandler(102, sheetName)
+            return errorHandler(8, sheetName)
         if i == 15 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there high low
-            return errorHandler(errorNum + 8, sheetName)
-        if i == 16 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there daily trade volume
             return errorHandler(errorNum + 9, sheetName)
+        if i == 16 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there daily trade volume
+            return errorHandler(errorNum + 10, sheetName)
         if i == 16 and float(removeNonNumeric(row[i].value, additionalSet)) < .15: #Daily trade volume below 150,000
-            return errorHandler(10, sheetName)
+            return errorHandler(11, sheetName)
         if i == 16 and performanceLength.count(0) >= 6: # 6 or more fields missing in Series
-            return errorHandler(errorNum + 11, sheetName)
+            return errorHandler(errorNum + 12, sheetName)
     return True
 
 #assets less than 1000 eliminated maybe change this
@@ -490,10 +490,11 @@ def getErrorCode(input):
         5: "E5: Shares Shorted Value over 20 percent",
         6: "E6: Missing Percent of Insiders",
         7: "E7: Percent held by institutions is missing",
-        8: "E8: 52 Week High and Low missing",
-        9: "E9: Daily trade volume missing",
-        10: "E10: Daily trading volume below 150k",
-        11: "E11: Missing 6 or more of Series 1 fields",
+        8: "E8: Percent held by institutions is above 95",
+        9: "E9: 52 Week High and Low missing",
+        10: "E10: Daily trade volume missing",
+        11: "E11 Daily trading volume below 150k",
+        12: "E12: Missing 6 or more of Series 1 fields",
         50: "E50: Years/TTM Missing",
         100: "E100: Missing Total Liabilities",
         101: "E101: Missing Total Assets",
