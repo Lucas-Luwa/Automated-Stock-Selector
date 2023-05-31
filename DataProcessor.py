@@ -7,7 +7,7 @@ import numpy
 from math import floor
 
 #Modify Toggles if desired
-wipeCurrVerNum, generateSheetToggle = False, False
+wipeCurrVerNum, generateSheetToggle = False, True
 
 def main():
     global sheetNames, writeExcelFileName, rawDataBook, core1, rowIndecies, originalStart
@@ -68,7 +68,7 @@ def excelWriter():
                         s2ErrorNumStart += 1
                     #Tag this on for the last one
                     if continueRunning: revenue, continueRunning = series2SmartSplitter(28, 23, s2Data[7], 30)
-                    if continueRunning: print(revenue)
+                    s2Data[8] = revenue
                     if continueRunning: 
                         #TAGS
                         for i in range(1,6):
@@ -88,7 +88,7 @@ def excelWriter():
                         #SERIES 2
                         s3startVal = 197
                         s2rowIndex = 0
-                        for i in range(17, s3startVal - 18):
+                        for i in range(17, s3startVal):
                             if (i - 17) % 18 == 0 and not i == 17: s2rowIndex += 1
                             tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = s2Data[s2rowIndex][(i - 17) % 18]
                         #SERIES 3
