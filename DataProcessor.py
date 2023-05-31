@@ -40,7 +40,7 @@ def excelWriter():
             prevSheetEndTime = originalStart
             elementCounter = 1
             #for row in rawDataBook[currSheet].iter_rows(3, stoppingIndecies[sheetCounter] - 1):
-            for row in rawDataBook[currSheet].iter_rows(34,34):
+            for row in rawDataBook[currSheet].iter_rows(3,44):
                 print("Ticker Symbol: ", row[1].value, tickSpaceAdder(row[1].value), "| ", elementCounter, " of ", stoppingIndecies[sheetCounter] - 3,\
                     " in ", currSheet," | ", row[4].value, " | Cumulative Time Elapsed",\
                         str(datetime.timedelta(seconds = round(time.time() - originalStart))), " | ", overallElementCounter, " of ", sum(stoppingIndecies) - 3 * len(stoppingIndecies), " Overall")
@@ -120,128 +120,142 @@ def series2SmartSplitter(revenueIndex, revenueError, netProfitMargin, netProfitI
     expNumElemGen = len(netProfitMargin) - netProfitMargin.count(None)
     netProfitMargin = removeNone(netProfitMargin) # This gives us exactly how much we need. 
     #Could add additional check for comma values later.
-    for i in range (0, expNumElemGen):
-        print("\nstartnewrun")
-        print(rawNumbersProfit)
-        print(rawNumbersRevenue)
-        possibleValues.clear()
-        numberOnlyRevenue = removeNonNumeric(rawNumbersRevenue, [])
-        numberOnlyProfit = removeNonNumeric(rawNumbersProfit, [])
-        currTargVal = removeNonNumeric(netProfitMargin[i], ['.'])
-        #For all -> DO NOT GO OUT OF BOUNDS!
-        #Case 1: Revenue has Comma + Net Profit has (). Check 4-6 for R
-        if len(rawNumbersRevenue) >= 5 and rawNumbersRevenue[len(rawNumbersRevenue) - 1 - 3] == ',' and rawNumbersProfit[len(rawNumbersProfit) - 1] == ')':
-            print("WE AT 1")
-            profitValues.append(rawNumbersProfit[rawNumbersProfit.rindex('('):] )
-            proposedProfitValue = removeNonNumeric(rawNumbersProfit[rawNumbersProfit.rindex('('):],[])
-            rawNumbersProfit = rawNumbersProfit[:rawNumbersProfit.rindex('(')]
-            for i in range (4, 7):
-                if i > len(numberOnlyRevenue): break
-                if int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:])  == 0: continue
-                print("i ", i, " ", numberOnlyRevenue [len(str(numberOnlyRevenue)) - i:])
-                possibleValues.append((abs(int( proposedProfitValue)/int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) - float(currTargVal)/100), i))
-            numDigits = min(possibleValues)[1]
-            revenueValues.append(numberOnlyRevenue[len(numberOnlyRevenue) - numDigits:])#-1 removed on 5.30.23 at 1:02 AM ET
-            rawNumbersRevenue = rawNumbersRevenue[:len(rawNumbersRevenue) - numDigits - 1]
-        #Case 2: Revenue has no comma + Net Profit has (). Check 1-3 for R
-        elif rawNumbersProfit[len(rawNumbersProfit) - 1] == ')':
-            print("WE AT 2")
-            profitValues.append(rawNumbersProfit[rawNumbersProfit.rindex('('):] )
-            proposedProfitValue = removeNonNumeric(rawNumbersProfit[rawNumbersProfit.rindex('('):],[])
-            rawNumbersProfit = rawNumbersProfit[:rawNumbersProfit.rindex('(')]
-            print(proposedProfitValue)
-            for i in range (1, 4):
-                if i > len(numberOnlyRevenue): break;
-                if int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) == 0: continue
-                print("i ", i, " ", numberOnlyRevenue [len(str(numberOnlyRevenue)) - i:])
-                possibleValues.append((abs(int( proposedProfitValue)/int(numberOnlyRevenue \
-                    [len(str(numberOnlyRevenue)) - i:]) - float(currTargVal)/100), i))
-            numDigits = min(possibleValues)[1]
-            print(possibleValues)
-            revenueValues.append(numberOnlyRevenue[len(numberOnlyRevenue) - numDigits:])
-            rawNumbersRevenue = rawNumbersRevenue[:len(rawNumbersRevenue) - numDigits]
-        #Case 3: Revenue has Comma + Net Profit has comma. Check 4-6 for both
-        elif len(rawNumbersRevenue) >= 5 and rawNumbersRevenue[len(rawNumbersRevenue) - 1 - 3] == ',' \
-            and  len(rawNumbersProfit) >= 5 and rawNumbersProfit[len(rawNumbersProfit) - 1 - 3] == ',':
-            print("WE AT 3")
-            for j in range (4, 7): # Profit
-                for i in range (4, 7): # Revenue
+    try:
+        for i in range (0, expNumElemGen):
+            # print("\nstartnewrun")
+            # print(rawNumbersProfit)
+            # print(rawNumbersRevenue)
+            possibleValues.clear()
+            numberOnlyRevenue = removeNonNumeric(rawNumbersRevenue, [])
+            numberOnlyProfit = removeNonNumeric(rawNumbersProfit, [])
+            currTargVal = removeNonNumeric(netProfitMargin[i], ['.'])
+            # if float(currTargVal) == 0.0: return s2zeroHandler(currRevList=revenueValues)
+            #For all -> DO NOT GO OUT OF BOUNDS!
+            #Case 1: Revenue has Comma + Net Profit has (). Check 4-6 for R
+            if len(rawNumbersRevenue) >= 5 and rawNumbersRevenue[len(rawNumbersRevenue) - 1 - 3] == ',' and rawNumbersProfit[len(rawNumbersProfit) - 1] == ')':
+                # print("WE AT 1")
+                profitValues.append(rawNumbersProfit[rawNumbersProfit.rindex('('):] ) 
+                proposedProfitValue = removeNonNumeric(rawNumbersProfit[rawNumbersProfit.rindex('('):],[])
+                rawNumbersProfit = rawNumbersProfit[:rawNumbersProfit.rindex('(')]
+                for i in range (4, 7):
+                    if i > len(numberOnlyRevenue): break
+                    if int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:])  == 0: continue
+                    # print("i ", i, " ", numberOnlyRevenue [len(str(numberOnlyRevenue)) - i:])
+                    possibleValues.append((abs(int( proposedProfitValue)/int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) - float(currTargVal)/100), i))
+                numDigits = min(possibleValues)[1]
+                revenueValues.append(numberOnlyRevenue[len(numberOnlyRevenue) - numDigits:])#-1 removed on 5.30.23 at 1:02 AM ET
+                rawNumbersRevenue = rawNumbersRevenue[:len(rawNumbersRevenue) - numDigits - 1]
+            #Case 2: Revenue has no comma + Net Profit has (). Check 1-3 for R
+            elif rawNumbersProfit[len(rawNumbersProfit) - 1] == ')':
+                # print("WE AT 2")
+                profitValues.append(rawNumbersProfit[rawNumbersProfit.rindex('('):] )
+                proposedProfitValue = removeNonNumeric(rawNumbersProfit[rawNumbersProfit.rindex('('):],[])
+                rawNumbersProfit = rawNumbersProfit[:rawNumbersProfit.rindex('(')]
+                # print(proposedProfitValue)
+                for i in range (1, 4):
+                    if i > len(numberOnlyRevenue): break;
                     if int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) == 0: continue
-                    if i <= len(numberOnlyRevenue) and j <= len(numberOnlyRevenue):
-                        print("i ", i, " j ", j, " ", numberOnlyProfit[len(str(numberOnlyProfit)) - j:])
-                        possibleValues.append((abs(int( numberOnlyProfit[len(str(numberOnlyProfit)) - j:])/ \
-                            int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) - float(currTargVal)/100), i, j))
-            dummy, numRevenue, numProfit = min(possibleValues)
-            revenueValues.append(numberOnlyRevenue[len(numberOnlyRevenue) - numRevenue:])#-1 removed on 5.30.23 at 1:02 AM ET
-            rawNumbersRevenue = rawNumbersRevenue[:len(rawNumbersRevenue) - numRevenue - 1]
-            profitValues.append(numberOnlyProfit[len(numberOnlyProfit) - numProfit:])#-1 removed on 5.30.23 at 1:02 AM ET
-            rawNumbersProfit = rawNumbersProfit[:len(rawNumbersProfit) - numProfit - 1]
-        #Case 4: Revenue has Comma + Net Profit has no comma. Check 4-6 for R and 1-3 for NP
-        elif len(rawNumbersRevenue) >= 5 and rawNumbersRevenue[len(rawNumbersRevenue) - 1 - 3] == ',':
-            print("WE AT 4")
-            for j in range (1, 4): # Profit
-                for i in range (4, 7): # Revenue
-                    if int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) == 0: continue
-                    if i <= len(numberOnlyRevenue) and j <= len(numberOnlyRevenue):
-                        print("i ", i, " j ", j, " ", int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]))
-                        print("my curr targ ", currTargVal)
-                        possibleValues.append((abs(int( numberOnlyProfit[len(str(numberOnlyProfit)) - j:])/ \
-                            int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) - float(currTargVal)/100), i, j))
-            dummy, numRevenue, numProfit = min(possibleValues)
-            print(possibleValues)
-            revenueValues.append(numberOnlyRevenue[len(numberOnlyRevenue) - numRevenue:])#Add in -1 if you're not doing number only
-            rawNumbersRevenue = rawNumbersRevenue[:len(rawNumbersRevenue) - numRevenue - 1]
-            profitValues.append(numberOnlyProfit[len(numberOnlyProfit) - numProfit:])
-            rawNumbersProfit = rawNumbersProfit[:len(rawNumbersProfit) - numProfit]
-        #Case 5: Revenue has no comma + Net Profit has comma. Check 1-3 for R and 4-6 for NP
-        elif len(rawNumbersProfit) >= 5 and rawNumbersProfit[len(rawNumbersProfit) - 1 - 3] == ',':
-            print("WE AT 5")
-            for j in range (4, 7): # Profit
-                for i in range (1, 4): # Revenue
-                    if int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) == 0: continue
-                    if i <= len(numberOnlyRevenue) and j <= len(numberOnlyRevenue):
-                        print("i ", i, " j ", j, " ", numberOnlyProfit[len(str(numberOnlyProfit)) - j:])
-                        possibleValues.append((abs(int( numberOnlyProfit[len(str(numberOnlyProfit)) - j:])/ \
-                            int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) - float(currTargVal)/100), i, j))
-            dummy, numRevenue, numProfit = min(possibleValues)
-            revenueValues.append(numberOnlyRevenue[len(numberOnlyRevenue) - numRevenue:])
-            rawNumbersRevenue = rawNumbersRevenue[:len(rawNumbersRevenue) - numRevenue]
-            profitValues.append(numberOnlyProfit[len(numberOnlyProfit) - numProfit:])#-1 removed on 5.30.23 at 1:02 AM ET
-            rawNumbersProfit = rawNumbersProfit[:len(rawNumbersProfit) - numProfit - 1]
-        #Case 6: Revenue has no comma + Net Profit has no comma. Check 1-3 for both
-        else:
-            print("WE AT 6")
-            for j in range (1, 4): # Profit
-                for i in range (1, 4): # Revenue
-                    if int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) == 0: continue
-                    if i <= len(numberOnlyRevenue) and j <= len(numberOnlyRevenue):
-                        print("i ", i, " j ", j, " ", numberOnlyProfit[len(str(numberOnlyProfit)) - j:])
-                        possibleValues.append((abs(int( numberOnlyProfit[len(str(numberOnlyProfit)) - j:])/ \
-                            int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) - float(currTargVal)/100), i, j))
-            dummy, numRevenue, numProfit = min(possibleValues)
-            print(possibleValues)
-            revenueValues.append(numberOnlyRevenue[len(numberOnlyRevenue) - numRevenue:])
-            rawNumbersRevenue = rawNumbersRevenue[:len(rawNumbersRevenue) - numRevenue]
-            profitValues.append(numberOnlyProfit[len(numberOnlyProfit) - numProfit:])
-            rawNumbersProfit = rawNumbersProfit[:len(rawNumbersProfit) - numProfit]
-        #Debugger
-        print("rv", revenueValues)
-        print("pv", profitValues)
-        print("rnp", rawNumbersProfit)
-        print("rnv", rawNumbersRevenue)
-        print("nop", numberOnlyProfit)
-        print("end of sequence")
-
+                    # print("i ", i, " ", numberOnlyRevenue [len(str(numberOnlyRevenue)) - i:])
+                    possibleValues.append((abs(int( proposedProfitValue)/int(numberOnlyRevenue \
+                        [len(str(numberOnlyRevenue)) - i:]) - float(currTargVal)/100), i))
+                numDigits = min(possibleValues)[1]
+                # print(possibleValues, numDigits)
+                revenueValues.append(numberOnlyRevenue[len(numberOnlyRevenue) - numDigits:])
+                rawNumbersRevenue = rawNumbersRevenue[:len(rawNumbersRevenue) - numDigits]
+            #Case 3: Revenue has Comma + Net Profit has comma. Check 4-6 for both
+            elif len(rawNumbersRevenue) >= 5 and rawNumbersRevenue[len(rawNumbersRevenue) - 1 - 3] == ',' \
+                and  len(rawNumbersProfit) >= 5 and rawNumbersProfit[len(rawNumbersProfit) - 1 - 3] == ',':
+                # print("WE AT 3")
+                for j in range (4, 7): # Profit
+                    for i in range (4, 7): # Revenue
+                        if int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) == 0: continue
+                        if i <= len(numberOnlyRevenue) and j <= len(numberOnlyRevenue):
+                            possibleValues.append((abs(int( numberOnlyProfit[len(str(numberOnlyProfit)) - j:])/ \
+                                int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) - float(currTargVal)/100), i, j))
+                dummy, numRevenue, numProfit = min(possibleValues)
+                # print(numRevenue, numProfit)
+                revenueValues.append(numberOnlyRevenue[len(numberOnlyRevenue) - numRevenue:])#-1 removed on 5.30.23 at 1:02 AM ET
+                rawNumbersRevenue = rawNumbersRevenue[:len(rawNumbersRevenue) - numRevenue - 1]
+                profitValues.append(numberOnlyProfit[len(numberOnlyProfit) - numProfit:])#-1 removed on 5.30.23 at 1:02 AM ET
+                rawNumbersProfit = rawNumbersProfit[:len(rawNumbersProfit) - numProfit - 1]
+            #Case 4: Revenue has Comma + Net Profit has no comma. Check 4-6 for R and 1-3 for NP
+            elif len(rawNumbersRevenue) >= 5 and rawNumbersRevenue[len(rawNumbersRevenue) - 1 - 3] == ',':
+                # print("WE AT 4")
+                for j in range (1, 4): # Profit
+                    for i in range (4, 7): # Revenue
+                        if int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) == 0: continue
+                        if i <= len(numberOnlyRevenue) and j <= len(numberOnlyRevenue):
+                            # print("i ", i, " j ", j, " ", int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]))
+                            # print("my curr targ ", currTargVal)
+                            possibleValues.append((abs(int( numberOnlyProfit[len(str(numberOnlyProfit)) - j:])/ \
+                                int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) - float(currTargVal)/100), i, j))
+                dummy, numRevenue, numProfit = min(possibleValues)
+                # print(possibleValues, numRevenue, numProfit)
+                revenueValues.append(numberOnlyRevenue[len(numberOnlyRevenue) - numRevenue:])#Add in -1 if you're not doing number only
+                rawNumbersRevenue = rawNumbersRevenue[:len(rawNumbersRevenue) - numRevenue - 1]
+                profitValues.append(numberOnlyProfit[len(numberOnlyProfit) - numProfit:])
+                rawNumbersProfit = rawNumbersProfit[:len(rawNumbersProfit) - numProfit]
+            #Case 5: Revenue has no comma + Net Profit has comma. Check 1-3 for R and 4-6 for NP
+            elif len(rawNumbersProfit) >= 5 and rawNumbersProfit[len(rawNumbersProfit) - 1 - 3] == ',':
+                # print("WE AT 5")
+                for j in range (4, 7): # Profit
+                    for i in range (1, 4): # Revenue
+                        if int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) == 0: continue
+                        if i <= len(numberOnlyRevenue) and j <= len(numberOnlyRevenue):
+                            # print("i ", i, " j ", j, " ", numberOnlyProfit[len(str(numberOnlyProfit)) - j:])
+                            possibleValues.append((abs(int( numberOnlyProfit[len(str(numberOnlyProfit)) - j:])/ \
+                                int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) - float(currTargVal)/100), i, j))
+                dummy, numRevenue, numProfit = min(possibleValues)
+                # print(numRevenue, numProfit)
+                revenueValues.append(numberOnlyRevenue[len(numberOnlyRevenue) - numRevenue:])
+                rawNumbersRevenue = rawNumbersRevenue[:len(rawNumbersRevenue) - numRevenue]
+                profitValues.append(numberOnlyProfit[len(numberOnlyProfit) - numProfit:])#-1 removed on 5.30.23 at 1:02 AM ET
+                rawNumbersProfit = rawNumbersProfit[:len(rawNumbersProfit) - numProfit - 1]
+            #Case 6: Revenue has no comma + Net Profit has no comma. Check 1-3 for both
+            else:
+                # print("WE AT 6")
+                for j in range (1, 4): # Profit
+                    for i in range (1, 4): # Revenue
+                        if int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) == 0: continue
+                        if i <= len(numberOnlyRevenue) and j <= len(numberOnlyRevenue):
+                            # print("i ", i, " j ", j, " ", numberOnlyProfit[len(str(numberOnlyProfit)) - j:])
+                            possibleValues.append((abs(int( numberOnlyProfit[len(str(numberOnlyProfit)) - j:])/ \
+                                int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - i:]) - float(currTargVal)/100), i, j))
+                dummy, numRevenue, numProfit = min(possibleValues)
+                # print(possibleValues, numRevenue, numProfit)
+                revenueValues.append(numberOnlyRevenue[len(numberOnlyRevenue) - numRevenue:])
+                rawNumbersRevenue = rawNumbersRevenue[:len(rawNumbersRevenue) - numRevenue]
+                profitValues.append(numberOnlyProfit[len(numberOnlyProfit) - numProfit:])
+                rawNumbersProfit = rawNumbersProfit[:len(rawNumbersProfit) - numProfit]
+            #Debugger
+            # print("rv", revenueValues)
+            # print("pv", profitValues)
+            # print("rnp", rawNumbersProfit)
+            # print("rnv", rawNumbersRevenue)
+            # print("nop", numberOnlyProfit)
+            # print("end of sequence")
+    except:
+        return s2zeroHandler(currRevList=revenueValues)
+    
+    print(rawNumbersRevenue)
+    if len(rawNumbersRevenue) > 0: return s2zeroHandler(currRevList=revenueValues)
 
     for i in range(0, len(yearsTTM)):
         if yearsTTM[i] == 1 and len(revenueValues) > 0:
             outputR[i] = revenueValues.pop(0)
             outputP[i] = profitValues.pop(0)
-    print(outputP)
-    print(outputR)
+    # print(outputP)
+    # print(outputR)
     #return outputR, outputP, True
     return outputR, True
 
+def s2zeroHandler(currRevList):
+    for i in range (0, len(yearsTTM)):
+        if i < len(currRevList):
+            currRevList[i] = str(currRevList[i]) + 'X'
+        else:
+            currRevList.append('X')
+    return currRevList, True
 
 def removeNone(currlist):
     temp = list()
