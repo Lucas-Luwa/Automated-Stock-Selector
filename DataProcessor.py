@@ -35,12 +35,12 @@ def excelWriter():
     sheetCounter = 0;
     overallElementCounter = 1;
     for currSheet in sheetNames:
-        if currSheet == 'Miscellaneous': #Use for  testing e.g. currSheet == 'Miscellaneous'
+        if 1: #Use for  testing e.g. currSheet == 'Miscellaneous'
             currSheetStartTime = time.time()
             prevSheetEndTime = originalStart
             elementCounter = 1
-            #for row in rawDataBook[currSheet].iter_rows(3, stoppingIndecies[sheetCounter] - 1):
-            for row in rawDataBook[currSheet].iter_rows(3,44):
+            for row in rawDataBook[currSheet].iter_rows(3, stoppingIndecies[sheetCounter] - 1):
+            # for row in rawDataBook[currSheet].iter_rows(3,44):
                 print("Ticker Symbol: ", row[1].value, tickSpaceAdder(row[1].value), "| ", elementCounter, " of ", stoppingIndecies[sheetCounter] - 3,\
                     " in ", currSheet," | ", row[4].value, " | Cumulative Time Elapsed",\
                         str(datetime.timedelta(seconds = round(time.time() - originalStart))), " | ", overallElementCounter, " of ", sum(stoppingIndecies) - 3 * len(stoppingIndecies), " Overall")
@@ -308,13 +308,13 @@ def series2ProcessorCondHelper(idNum, individualValues, rawNumbers):
         else:
             individualValues.append(rawNumbers[0:rawNumbers.index('.') + 3])
             rawNumbers = rawNumbers[rawNumbers.index('.') + 3:]
-    if idNum in [2]:
+    if idNum in [1, 2]:
         if rawNumbers[0] == '{':
             individualValues.append(rawNumbers[0:rawNumbers.index('}') + 1])
             rawNumbers = rawNumbers[rawNumbers.index('}') + 1:]
-    if idNum in [1, 2]:
-        individualValues.append(rawNumbers[0:rawNumbers.index('.') + 3])
-        rawNumbers = rawNumbers[rawNumbers.index('.') + 3:]
+        else:
+            individualValues.append(rawNumbers[0:rawNumbers.index('.') + 3])
+            rawNumbers = rawNumbers[rawNumbers.index('.') + 3:]
     return individualValues, rawNumbers
 
 def yearProcessing(rowIndex):
@@ -437,7 +437,7 @@ def generateFileName():
     recoveryLines = recoveryFile.readlines()
     recoveryFile.close()
     MonthYear = recoveryLines[4].split(" ")[1].strip()
-    filePath = "C://Users//User//Documents//GitHub//Automated-Stock-Selector//ProcessedSheets"
+    filePath = "C://Users//Lucas//Documents//GitHub//Automated-Stock-Selector//ProcessedSheets"
     directoryFiles = os.listdir(filePath)
     if not (MonthYear in directoryFiles): #Create the folder if it isn't already there.
         folderPath = os.path.join(filePath, MonthYear)
