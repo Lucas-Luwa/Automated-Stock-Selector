@@ -35,7 +35,7 @@ def excelWriter():
     sheetCounter = 0;
     overallElementCounter = 1;
     for currSheet in sheetNames:
-        if True: #Use for  testing e.g. currSheet == 'Miscellaneous'
+        if currSheet == 'Miscellaneous': #Use for  testing e.g. currSheet == 'Miscellaneous'
             currSheetStartTime = time.time()
             prevSheetEndTime = originalStart
             elementCounter = 1
@@ -52,7 +52,7 @@ def excelWriter():
                     continueRunning = True
                     #SERIES 2 - More processing than 1 and 3. We don't wanna perform this twice. Errors handled inside here.
                     s2Indecies = [17, 19, 20, 25, 27, 29, 31, 33]
-                    s2charSet = [['.'], ['.', '{', '}'], ['.', '(', ')', '{', '}'], ['.', '-', ' '], ['.', '-', ' '], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')']]
+                    s2charSet = [['.'], ['.', '{', '}'], ['.', '(', ')', '{', '}'], ['.', '-', ' ', '{', '}'], ['.', '-', ' ', '{', '}'], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')']]
                     s2Data =  [[0]*18 for i in range(10)]
                     s2ErrorNumStart = 201
                     idNumStart = 1
