@@ -5,17 +5,19 @@ import calendar
 import os
 import numpy
 from math import floor
+import pandas as pd
 
 #Modify Toggles if desired
-wipeCurrVerNum, generateSheetToggle = False, True
+wipeCurrVerNum, generateSheetToggle, useRevenueSheet = False, True, True
 
 def main():
-    global sheetNames, writeExcelFileName, rawDataBook, core1, rowIndecies, originalStart
+    global sheetNames, writeExcelFileName, rawDataBook, core1, rowIndecies, originalStart, revenueBook
     originalStart = time.time()
     print("Starting data processor...")
     writeExcelFileName = generateFileName() #We write to this
     rawDataFileName = findRawDataFileName()
     rawDataBook = openpyxl.load_workbook(rawDataFileName)#Pull data from this 
+    revenueBook = pd.ExcelFile("CoreExcelFiles/RevenueReference.xlsx")
     rawData = rawDataBook.active
     coreName = "CoreExcelFiles/P2MasterTemplate5.29.23.xlsx"
     core1 = openpyxl.load_workbook(coreName)
@@ -35,12 +37,13 @@ def excelWriter():
     sheetCounter = 0;
     overallElementCounter = 1;
     for currSheet in sheetNames:
-        if not currSheet == 'ELIMINATED': #Use for  testing e.g. currSheet == 'Miscellaneous'
+        if currSheet == 'Miscellaneous': #Use for testing otherwise write if not currSheet == 'ELIMINATED'
+            revSheet = pd.read_excel(revenueBook, currSheet, header = 1)
             currSheetStartTime = time.time()
             prevSheetEndTime = originalStart
             elementCounter = 1
-            for row in rawDataBook[currSheet].iter_rows(3, stoppingIndecies[sheetCounter] - 1):
-            # for row in rawDataBook[currSheet].iter_rows(3,44):
+            # for row in rawDataBook[currSheet].iter_rows(3, stoppingIndecies[sheetCounter] - 1):
+            for row in rawDataBook[currSheet].iter_rows(3,44): # Testing
                 print("Ticker Symbol: ", row[1].value, tickSpaceAdder(row[1].value), "| ", elementCounter, " of ", stoppingIndecies[sheetCounter] - 3,\
                     " in ", currSheet," | ", row[4].value, " | Cumulative Time Elapsed",\
                         str(datetime.timedelta(seconds = round(time.time() - originalStart))), " | ", overallElementCounter, " of ", sum(stoppingIndecies) - 3 * len(stoppingIndecies), " Overall")
@@ -68,7 +71,12 @@ def excelWriter():
                         idNumStart += 1
                         s2ErrorNumStart += 1
                     #Tag this on for the last one
-                    if continueRunning: revenue, continueRunning = series2SpecialSplitter(28, 200, s2Data[7], 30)
+                    extractedRev = revSheet[revSheet['Tick Symbol'] == row[1].value].to_numpy(None, False, None)                   
+                    if len(extractedRev) == 1 and continueRunning: 
+                        #print(extractedRev[0][178:196] , "HEYa")
+                        revenue = extractedRev[0][178:196]
+                    elif continueRunning: 
+                        revenue, continueRunning = series2SpecialSplitter(28, 200, s2Data[7], 30)
                     s2Data[9] = revenue
                     if continueRunning: 
                         #TAGS
@@ -438,7 +446,7 @@ def generateFileName():
     recoveryLines = recoveryFile.readlines()
     recoveryFile.close()
     MonthYear = recoveryLines[4].split(" ")[1].strip()
-    filePath = "C://Users//Lucas//Documents//GitHub//Automated-Stock-Selector//ProcessedSheets"
+    filePath = "C://Users//User//Documents//GitHub//Automated-Stock-Selector//ProcessedSheets"
     directoryFiles = os.listdir(filePath)
     if not (MonthYear in directoryFiles): #Create the folder if it isn't already there.
         folderPath = os.path.join(filePath, MonthYear)
