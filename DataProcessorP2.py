@@ -18,7 +18,6 @@ def main():
     rawDataFileName = findRawDataFileName()
     rawDataBook = openpyxl.load_workbook(rawDataFileName)#Pull data from this 
     revenueBook = pd.ExcelFile("CoreExcelFiles/RevenueReference.xlsx")
-    rawData = rawDataBook.active
     coreName = "CoreExcelFiles/P2MasterTemplate5.29.23.xlsx"
     core1 = openpyxl.load_workbook(coreName)
     sheetNames = core1.sheetnames
@@ -37,7 +36,7 @@ def excelWriter():
     sheetCounter = 0;
     overallElementCounter = 1;
     for currSheet in sheetNames:
-        if currSheet == 'Miscellaneous': #Use for testing otherwise write if not currSheet == 'ELIMINATED'
+        if not currSheet == 'ELIMINATED': #Use for testing otherwise write if not currSheet == 'ELIMINATED' Testing: currSheet == 'Miscellaneous
             revSheet = pd.read_excel(revenueBook, currSheet, header = 1)
             currSheetStartTime = time.time()
             prevSheetEndTime = originalStart
@@ -381,7 +380,7 @@ def redFlagsS1(sheetName):
 #assets less than 1000 eliminated maybe change this
 def redFlagsS3(sheetName):
     performanceValues = [34, 35, 40] 
-    additionalSet = ['-', '.'] 
+    additionalSet = ['.'] 
     #Total Liabilities, Total Assets and Number of Employees
     errorNum = 100
     for i in performanceValues: 
