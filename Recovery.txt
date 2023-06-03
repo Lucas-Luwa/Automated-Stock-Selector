@@ -1,8 +1,7 @@
-These are the rowIndecies: [702, 1220, 1053, 73, 45, 148, 175, 792, 261, 182, 1498, 68, 680]
-This is the current failedIndex: 750
+rowIndecies: [702, 1220, 1053, 73, 45, 148, 175, 792, 261, 182, 1498, 68, 680]
+failedIndex: 750
 Last successful Ticker: ZWS
 Current Exchange: NYSE
-Month/Year: May2023
-VersionNumber: 1
-Updated: 2023-05-27
-DataProcessVersion: 1
+Month/Year: June2023
+VersionNumber: 0
+Updated: 2023-06-03
