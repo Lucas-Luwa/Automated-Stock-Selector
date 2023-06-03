@@ -100,7 +100,7 @@ def excelWriter(sheet, rowIndecies, failedIndex, endVal, selectorBit, startIndex
             rowIndecies[sheetIndex] += 1
         if generateSheet: core1.save(newFileName)
         counter += 1
-        print(Series2)
+        # print(Series2)
         #System Error Recovery
         recoveryFile = open("Recovery.txt","w")
         recoveryFile.write("rowIndecies: " + str(rowIndecies) + "\n")
