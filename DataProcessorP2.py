@@ -41,8 +41,8 @@ def excelWriter():
             currSheetStartTime = time.time()
             prevSheetEndTime = originalStart
             elementCounter = 1
-            # for row in rawDataBook[currSheet].iter_rows(3, stoppingIndecies[sheetCounter] - 1):
-            for row in rawDataBook[currSheet].iter_rows(3,44): # Testing
+            for row in rawDataBook[currSheet].iter_rows(3, stoppingIndecies[sheetCounter] - 1):
+            # for row in rawDataBook[currSheet].iter_rows(3,44): # Testing
                 print("Ticker Symbol: ", row[1].value, tickSpaceAdder(row[1].value), "| ", elementCounter, " of ", stoppingIndecies[sheetCounter] - 3,\
                     " in ", currSheet," | ", row[4].value, " | Cumulative Time Elapsed",\
                         str(datetime.timedelta(seconds = round(time.time() - originalStart))), " | ", overallElementCounter, " of ", sum(stoppingIndecies) - 3 * len(stoppingIndecies), " Overall")
