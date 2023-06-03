@@ -365,8 +365,8 @@ def redFlagsS1(sheetName):
             return errorHandler(errorNum + 6, sheetName)
         if i == 12 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there Institution %
             return errorHandler(errorNum + 7, sheetName)
-        if i == 12 and float(removeNonNumeric(row[i].value, additionalSet)) > 95: #Institution Value too %
-            return errorHandler(8, sheetName)
+        # if i == 12 and float(removeNonNumeric(row[i].value, additionalSet)) > 95: #Institution Value too high
+        #     return errorHandler(8, sheetName)
         if i == 15 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there high low
             return errorHandler(errorNum + 9, sheetName)
         if i == 16 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there daily trade volume
@@ -445,7 +445,7 @@ def generateFileName():
     recoveryLines = recoveryFile.readlines()
     recoveryFile.close()
     MonthYear = recoveryLines[4].split(" ")[1].strip()
-    filePath = "C://Users//User//Documents//GitHub//Automated-Stock-Selector//ProcessedSheets"
+    filePath = "C://Users//Lucas//Documents//GitHub//Automated-Stock-Selector//ProcessedSheets"
     directoryFiles = os.listdir(filePath)
     if not (MonthYear in directoryFiles): #Create the folder if it isn't already there.
         folderPath = os.path.join(filePath, MonthYear)
