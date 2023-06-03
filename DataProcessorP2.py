@@ -16,7 +16,7 @@ def main():
     rawDataFileName = findRawDataFileName()
     rawDataBook = openpyxl.load_workbook(rawDataFileName)#Pull data from this 
     revenueBook = pd.ExcelFile("CoreExcelFiles/RevenueReference.xlsx")
-    coreName = "CoreExcelFiles/P2MasterTemplate5.29.23.xlsx"
+    coreName = "CoreExcelFiles/P2MasterTemplate6.2.23.xlsx"
     core1 = openpyxl.load_workbook(coreName)
     sheetNames = core1.sheetnames
     
@@ -34,7 +34,7 @@ def excelWriter():
     sheetCounter = 0;
     overallElementCounter = 1;
     for currSheet in sheetNames:
-        if not currSheet == 'ELIMINATED': #Use for testing otherwise write if not currSheet == 'ELIMINATED' Testing: currSheet == 'Miscellaneous
+        if not currSheet == 'ELIMINATED': #Use for testing otherwise write if not currSheet == 'ELIMINATED' Testing: currSheet == 'Miscellaneous'
             revSheet = pd.read_excel(revenueBook, currSheet, header = 1)
             currSheetStartTime = time.time()
             prevSheetEndTime = originalStart
@@ -52,12 +52,13 @@ def excelWriter():
                 if redFlagsS1(currSheet) and redFlagsS3(currSheet):
                     continueRunning = True
                     #SERIES 2 - More processing than 1 and 3. We don't wanna perform this twice. Errors handled inside here.
-                    s2Indecies = [17, 19, 20, 25, 27, 29, 31, 33]
-                    s2charSet = [['.'], ['.', '{', '}'], ['.', '(', ')', '{', '}'], ['.', '-', ' ', '{', '}'], ['.', '-', ' ', '{', '}'], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')']]
-                    s2Data =  [[0]*18 for i in range(10)]
+                    #What are we adding here: 21(FCF), 23(CAPEX), 24(BKVLUE), (31)INCOME TAX, (37)ROC, (38)ROE
+                    s2Indecies = [17, 19, 20, 21, 23, 24, 25, 27, 29, 31, 32, 34, 35, 36]
+                    s2charSet = [['.'], ['.', '{', '}'], ['.', '(', ')', '{', '}'], ['.', '(', ')', '{', '}'], ['.', '(', ')', '{', '}'], ['.', '(', ')', '{', '}'], ['.', '-', ' ', '{', '}'],\
+                        ['.', '-', ' ', '{', '}'], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')'], ['.', '-', ' ', '%', '(', ')']]
+                    s2Data =  [[0]*18 for i in range(len(s2Indecies) + 2)] #Additional spot for High/Low Split and Revenue
                     s2ErrorNumStart = 201
                     idNumStart = 1
-
                     yearsTTM, continueRunning = yearProcessing(18)
                     for i in range (1, len(s2Indecies) + 1):
                         if not continueRunning: break
@@ -74,7 +75,7 @@ def excelWriter():
                         revenue = extractedRev[0][178:196]
                     elif continueRunning: 
                         revenue, continueRunning = series2SpecialSplitter(28, 200, s2Data[7], 30)
-                    s2Data[9] = revenue
+                    s2Data[len(s2Data) - 1] = revenue
                     if continueRunning: 
                         #TAGS
                         for i in range(1,6):
@@ -92,13 +93,13 @@ def excelWriter():
                                 tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = high
                                 tempWKST.cell(row = rowIndecies[sheetIndex], column = i + 1).value = low
                         #SERIES 2
-                        s3startVal = 197
+                        s3startVal = 305
                         s2rowIndex = 0
                         for i in range(17, s3startVal):
                             if (i - 17) % 18 == 0 and not i == 17: s2rowIndex += 1
                             tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = s2Data[s2rowIndex][(i - 17) % 18]
                         #SERIES 3
-                        counter = 34;
+                        counter = 38;
                         for i in range (s3startVal, s3startVal + 5):
                             if i == s3startVal + 3: counter += 2
                             tempWKST.cell(row = rowIndecies[sheetIndex], column = i).value = row[counter].value
@@ -265,14 +266,15 @@ def removeNone(currlist):
 
 def series2Processor(rowIndex, errorNum, idNum, additionalSet):
     if row[rowIndex].value == None: return None, errorHandler(errorNum, currSheet)
-    if row[rowIndex].value[0] == ')' and idNum == 3: row[rowIndex].value = row[rowIndex].value[1:] # Temporary until infinity issue is fixed
-    if row[rowIndex].value[0:2] == ')%' and idNum == 8: row[rowIndex].value = row[rowIndex].value[2:] # Temporary until infinity issue is fixed
+    if row[rowIndex].value[0] == ')' and idNum == 3: row[rowIndex].value = row[rowIndex].value[1:] # Remove Extra Data
+    if row[rowIndex].value[0:2] == ')%' and idNum == 12: row[rowIndex].value = row[rowIndex].value[2:] # Remove Extra Data
+    if row[rowIndex].value[0] == '.' and idNum == 6: row[rowIndex].value = row[rowIndex].value[1:] # Remove Extra Data
 
     output = [None] * len(yearsTTM)
     if idNum == 1: output2 = [None] * len(yearsTTM)
     individualValues = list()
     rawNumbers = removeNonNumeric(row[rowIndex].value, additionalSet) 
-    if len(rawNumbers) == 0 and not idNum == 5: return None, errorHandler(errorNum, currSheet)
+    if len(rawNumbers) == 0 and not idNum == 8: return None, errorHandler(errorNum, currSheet)
     while len(rawNumbers) > 0:
         individualValues, rawNumbers = series2ProcessorCondHelper(idNum, individualValues, rawNumbers)
     for i in range(0, len(yearsTTM)):
@@ -283,18 +285,18 @@ def series2Processor(rowIndex, errorNum, idNum, additionalSet):
     return output, True
 
 def series2ProcessorCondHelper(idNum, individualValues, rawNumbers):
-    if idNum in [6, 7, 8]:
+    if idNum in [9, 10, 11, 12, 13, 14]:
         if rawNumbers[0] == '-':
             individualValues.append(str(0.0))
             rawNumbers = rawNumbers[3:]
         else:
             individualValues.append(rawNumbers[0:rawNumbers.index('%') + 1])
             rawNumbers = rawNumbers[rawNumbers.index('%') + 1:]
-    if idNum in [4]:
+    if idNum in [7]:
         if rawNumbers[0] == '(':
             individualValues.append(rawNumbers[0:rawNumbers.index(')') + 1])
             rawNumbers = rawNumbers[rawNumbers.index(')') + 1:]
-    if idNum in [4, 5]:
+    if idNum in [7, 8]:
         if rawNumbers[0] == '-':
             individualValues.append(str(0.0))
             rawNumbers = rawNumbers[3:]
@@ -304,7 +306,7 @@ def series2ProcessorCondHelper(idNum, individualValues, rawNumbers):
         else:
             individualValues.append(rawNumbers[0:rawNumbers.index('.') + 2])
             rawNumbers = rawNumbers[rawNumbers.index('.') + 2:]
-    if idNum in [3]:
+    if idNum in [3, 4, 5, 6]:
         if rawNumbers[0] == '(':
             individualValues.append(rawNumbers[0:rawNumbers.index(')') + 1])
             rawNumbers = rawNumbers[rawNumbers.index(')') + 1:]
@@ -349,9 +351,9 @@ def redFlagsS1(sheetName):
         performanceLength.append(len(removeNonNumeric(row[i].value, additionalSet)))
         if i == 5 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there PE
             return errorHandler(errorNum, sheetName)
-        if i == 5 and float(removeNonNumeric(row[i].value, additionalSet)) < -100: #PE Over 300
+        if i == 5 and float(removeNonNumeric(row[i].value, additionalSet)) < -300: #PE Over 300
             return errorHandler(errorNum + 1, sheetName)
-        if i == 5 and float(removeNonNumeric(row[i].value, additionalSet)) > 300: #PE Under -100
+        if i == 5 and float(removeNonNumeric(row[i].value, additionalSet)) > 350: #PE Under -100
             return errorHandler(errorNum + 2, sheetName)
         if i == 8 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there MKTCAP
             return errorHandler(errorNum + 3, sheetName)
@@ -377,20 +379,20 @@ def redFlagsS1(sheetName):
 
 #assets less than 1000 eliminated maybe change this
 def redFlagsS3(sheetName):
-    performanceValues = [34, 35, 40] 
+    performanceValues = [38, 39, 44] # Index - 1 
     additionalSet = ['.'] 
     #Total Liabilities, Total Assets and Number of Employees
     errorNum = 100
     for i in performanceValues: 
         if row[i].value == None:
             return errorHandler(782, sheetName)
-        if i == 35 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there Total Liabilities
+        if i == 38 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there Total Liabilities
             return errorHandler(errorNum, sheetName)
-        if i == 36 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there Total Assets
+        if i == 39 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there Total Assets
             return errorHandler(errorNum + 1, sheetName)
-        if i == 40 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Number of employees missing
+        if i == 44 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Number of employees missing
             return errorHandler(errorNum + 2, sheetName) 
-        if i == 40 and int(removeNonNumeric(row[i].value, additionalSet)) < 50: #Number of Employees under 50 
+        if i == 44 and int(removeNonNumeric(row[i].value, additionalSet)) < 50: #Number of Employees under 50 
             return errorHandler(errorNum + 3, sheetName)
         # if i == 36 and float(removeNonNumeric(row[i].value, additionalSet)) < 10: #Assets less than $10 Million
         #     return errorHandler(errorNum + 2, sheetName)
@@ -443,7 +445,7 @@ def generateFileName():
     recoveryLines = recoveryFile.readlines()
     recoveryFile.close()
     MonthYear = recoveryLines[4].split(" ")[1].strip()
-    filePath = "C://Users//Lucas//Documents//GitHub//Automated-Stock-Selector//ProcessedSheets"
+    filePath = "C://Users//User//Documents//GitHub//Automated-Stock-Selector//ProcessedSheets"
     directoryFiles = os.listdir(filePath)
     if not (MonthYear in directoryFiles): #Create the folder if it isn't already there.
         folderPath = os.path.join(filePath, MonthYear)
@@ -488,8 +490,8 @@ def writeToRecovery(toggle, versionNumber, wipeCurrVerNum):
 def getErrorCode(input):
     switch = {
         0: "E0: P/E Ratio is missing",
-        1: "E1: P/E Ratio is below the cutoff of -100",
-        2: "E2: P/E Ratio is above the cutoff of +300",
+        1: "E1: P/E Ratio is below the cutoff of -300",
+        2: "E2: P/E Ratio is above the cutoff of +350",
         3: "E3: Missing Market Cap Value",
         4: "E4: Missing Shares Shorted Value",
         5: "E5: Shares Shorted Value over 20 percent",
@@ -509,11 +511,17 @@ def getErrorCode(input):
         201: "E201: High/Low Values Missing",
         202: "E202: Revenue Per Share Values Missing",
         203: "E203: Earnings Per Share Values Missing",
-        204: "E204: P/E Ratio Values Missing",
-        205: "E205: Dividend Yield Values Missing",
-        206: "E206: Operating Margin % Missing",
-        207: "E207: Net Profit Margin % Missing",
-        208: "E208: ROIC Missing",
+        204: "E204: Free Cash Flow (FCF) Per Share Values Missing",
+        205: "E205: CAPEX Values Missing",
+        206: "E206: Book Value Per Share Values Missing",
+        207: "E207: P/E Ratio Values Missing",
+        208: "E208: Dividend Yield Values Missing",
+        209: "E209: Operating Margin % Values Missing",
+        210: "E210: Income Tax Rate Values Missing",
+        211: "E211: Net Profit Margin % Missing",
+        212: "E212: ROIC Values Missing",
+        213: "E213: ROC Values Missing",
+        214: "E214: ROE Values Missing",
         782: "E782: Stock has Element set to 'None'",
         }
     return switch.get(input, "")

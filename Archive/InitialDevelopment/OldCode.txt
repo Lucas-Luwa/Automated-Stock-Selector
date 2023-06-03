@@ -1,0 +1,95 @@
+def series2SmartSplitter2(revenueIndex, revenueError, netProfitMargin, netProfitIndex):
+    if row[revenueIndex].value == None: return None, errorHandler(revenueError, currSheet)
+    if row[revenueIndex].value[0] == ')': row[revenueIndex].value = row[revenueIndex].value[1:] # Temporary until infinity issue is fixed
+    if row[netProfitIndex].value[0] == ')': row[netProfitIndex].value = row[netProfitIndex].value[1:] # Temporary until infinity issue is fixed
+    revOutput = [None] * len(yearsTTM)
+    revenueValues = list()
+    profitValues = list()
+    rawNumbersRevenue = removeNonNumeric(row[revenueIndex].value, ['(', ')']) 
+    rawNumbersProfit = removeNonNumeric(row[netProfitIndex].value, ['(', ')']) 
+    if len(rawNumbersRevenue) == 0: return None, errorHandler(revenueError, currSheet)
+    expectedNumItems = len(netProfitMargin) - netProfitMargin.count(None)
+    maxRevenueDigits = floor(len(rawNumbersRevenue) / expectedNumItems) + 2
+    maxProfitDigits = floor(len(rawNumbersProfit) / expectedNumItems) + 2
+    netProfitMargin = removeNone(netProfitMargin)
+    endLimit = expectedNumItems
+    for i in range (0, endLimit):
+        orgExpNumItems = expectedNumItems
+        currPercentage = removeNonNumeric(netProfitMargin[i], ['.'])
+        #Case 1: () exists for profits and commas exist for the revenue
+        if rawNumbersProfit[len(rawNumbersProfit) - 1] == ')' and len(rawNumbersRevenue) - 4 > 0 and rawNumbersRevenue[len(rawNumbersRevenue) - 1 - 3] == ',':
+            currCommaIndex = len(rawNumbersRevenue) - 1 - 3
+            print("hi1")
+            if expectedNumItems == 1:
+                revenueValues.append(rawNumbersRevenue)
+                rawNumbersRevenue = ''
+                profitValues.append(rawNumbersProfit[rawNumbersProfit.rindex('('):])
+                rawNumbersProfit = rawNumbersProfit[:rawNumbersProfit.rindex('(')]
+                expectedNumItems -= 1
+            else: # Try to find the other or hand it off as an error. 
+                if rawNumbersProfit.count(',') == 1:
+                    pass
+                else: #Second one exists we start counting. 
+                    revenueValues.append(rawNumbersRevenue[rawNumbersProfit[0:currCommaIndex].rindex(',') + 4:])
+                    rawNumbersRevenue = rawNumbersRevenue[:rawNumbersProfit[0:currCommaIndex].rindex(',') + 4]
+                    profitValues.append(rawNumbersProfit[rawNumbersProfit.rindex('('):])
+                    rawNumbersProfit = rawNumbersProfit[:rawNumbersProfit.rindex('(')]
+                    expectedNumItems -= 1
+        #Case 2: Lower has a () but upper is either missing commas or only has 1. If one we start checking at 4.
+        if orgExpNumItems == expectedNumItems and rawNumbersProfit[len(rawNumbersProfit) - 1] == ')':
+            print("hi2")
+            proposedProfitValue = rawNumbersProfit[rawNumbersProfit.rindex('('):]
+            numberOnlyProfit = removeNonNumeric(proposedProfitValue, [])
+            numberOnlyRevenue = removeNonNumeric(rawNumbersRevenue, [])
+            possibleValues = list()
+            currDigits =  1
+            if rawNumbersRevenue[len(rawNumbersRevenue) - 1 - 3] == ',':
+                currDigits = 4
+            while len(rawNumbersRevenue) >= currDigits and currDigits <= maxRevenueDigits + 1:
+                print(" 1" ,int(numberOnlyProfit)/int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - currDigits:]) - float(currPercentage)/100)
+                possibleValues.append((abs(int(numberOnlyProfit)/int(numberOnlyRevenue[len(str(numberOnlyRevenue)) - currDigits:]) - float(currPercentage)/100), currDigits))
+                currDigits += 1
+            calculatedDigits = min(possibleValues)[1]
+            revenueValues.append(numberOnlyRevenue[len(numberOnlyRevenue) - calculatedDigits:])
+            print(possibleValues, " ", currPercentage)
+            if calculatedDigits < 4: 
+                rawNumbersRevenue = rawNumbersRevenue[:len(rawNumbersRevenue) - calculatedDigits]
+            else:
+                rawNumbersRevenue = rawNumbersRevenue[:len(rawNumbersRevenue) - calculatedDigits - 1]
+            profitValues.append(proposedProfitValue)
+            rawNumbersProfit = rawNumbersProfit[:rawNumbersProfit.rindex('(')]
+            expectedNumItems -= 1
+        #Case 3: no ()  for profits but commas exist for the revenue
+        if orgExpNumItems == expectedNumItems and rawNumbersRevenue[len(rawNumbersRevenue) - 1 - 3] == ',':
+            print("hi3")
+            currCommaIndex = len(rawNumbersRevenue) - 1 - 3
+            currRevenue = -1
+            if expectedNumItems == 1:
+                revenueValues.append(rawNumbersRevenue)
+                currRevenue = rawNumbersRevenue
+                rawNumbersRevenue = ''
+                # profitValues.append(rawNumbersProfit[rawNumbersProfit.rindex('('):])
+                # rawNumbersProfit = rawNumbersProfit[rawNumbersProfit.rindex('('):]
+                expectedNumItems -= 1
+            else: # Try to find the other or hand it off as an error. 
+                if rawNumbersProfit.count(',') == 1:
+                    pass
+                else: #Second one exists we start counting. 
+                    revenueValues.append(rawNumbersRevenue[rawNumbersProfit[0:currCommaIndex].rindex(',') + 4:])
+                    currRevenue = rawNumbersRevenue[rawNumbersProfit[0:currCommaIndex].rindex(',') + 4:]
+                    rawNumbersRevenue = rawNumbersRevenue[rawNumbersProfit[0:currCommaIndex].rindex(',') + 4:]
+                    # profitValues.append(rawNumbersProfit[rawNumbersProfit.rindex('('):])
+                    # rawNumbersProfit = rawNumbersProfit[rawNumbersProfit.rindex('('):]
+                    expectedNumItems -= 1
+            currDigits =  1
+            possibleValues = list()
+            profitDigits = len(round(currRevenue * currPercentage / 100))
+            profitValues.append(rawNumbersProfit[len(rawNumbersProfit) - 1 - profitDigits:])
+            rawNumbersProfit = rawNumbersProfit[:len(rawNumbersProfit) - 1 - profitDigits]
+            expectedNumItems -= 1
+        #Case 4: Worst case - THE TABLE OF DOOM
+        if orgExpNumItems == expectedNumItems:
+            pass
+        print(revenueValues)
+        print(profitValues)
+        print(expectedNumItems)
