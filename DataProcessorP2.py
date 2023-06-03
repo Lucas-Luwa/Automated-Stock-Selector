@@ -1,9 +1,7 @@
 import openpyxl
 import time
 import datetime
-import calendar
 import os
-import numpy
 from math import floor
 import pandas as pd
 

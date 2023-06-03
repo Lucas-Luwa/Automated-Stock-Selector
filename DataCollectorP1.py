@@ -8,12 +8,12 @@ import datetime
 import calendar
 
 #Modify Toggles 
-nasdaqActive, nyseActive, recoveryMode, nasdaqTestMode, nyseTestMode, manualResetVerNum, manualStartIndex  = True, True, False, False, False, False, False
+nasdaqActive, nyseActive, recoveryMode, nasdaqTestMode, nyseTestMode, manualResetVerNum, manualStartIndex, generateSheet  = True, True, False, False, False, False, False, True
 recoveryIndecies = [424, 1101, 564, 40, 29, 88, 59, 596, 87, 52, 799, 17, 212]
 recoveryFileName = "May23RawData CompleteBackup Nasdaq.xlsx"
 recoveryFailureIndex = 631 #Use this for manual index start as well 
 nasdaqRecoveryIndex = 2279 #Use this for manual index start as well 
-testModeStocks = 2
+testModeStocks = 3
 nyseRecoveryIndex = 2 #Use this for manual index start as well
 customVersionNumber = 8
 
@@ -24,7 +24,7 @@ def main():
     print("Starting program...")
     nasdaqName = "CoreExcelFiles/NASDAQ2.4.23.xlsx"
     nyseData = "CoreExcelFiles/NYSE5.26.23.xlsx"
-    coreName = "CoreExcelFiles/P1MasterTemplate5.26.23.xlsx"  if not recoveryMode and nasdaqActive else recoveryFileName
+    coreName = "CoreExcelFiles/P1MasterTemplate6.2.23.xlsx"  if not recoveryMode and nasdaqActive else recoveryFileName
     nasdaq1 = openpyxl.load_workbook(nasdaqName)
     nyse1 = openpyxl.load_workbook(nyseData)
     core1 = openpyxl.load_workbook(coreName)
@@ -98,9 +98,9 @@ def excelWriter(sheet, rowIndecies, failedIndex, endVal, selectorBit, startIndex
                 if i > (5 + len(Series1) + len(Series2)) and i <= (5 + len(Series1) + len(Series2) + len(Series3)): tempWorksheet.cell(row = rowIndecies[sheetIndex], column = i).value = Series3[i - 6 - len(Series1) - len(Series2)]
 
             rowIndecies[sheetIndex] += 1
-            core1.save(newFileName)
+        if generateSheet: core1.save(newFileName)
         counter += 1
-
+        print(Series2)
         #System Error Recovery
         recoveryFile = open("Recovery.txt","w")
         recoveryFile.write("rowIndecies: " + str(rowIndecies) + "\n")
@@ -113,9 +113,9 @@ def excelWriter(sheet, rowIndecies, failedIndex, endVal, selectorBit, startIndex
         #Impatient programmer pacifier 
         #Change the counter % [Some number] to change number of statements printed
         if (counter % 1 == 0 or counter == 1 or counter == endVal - 1): 
-            print("Running ", counter, " of ", endVal - 1, " in NASDAQ ", "| Time Elapsed: ", str(datetime.timedelta(seconds = round(end - start1))), \
+            print("Running ", counter, " of ", endVal - 1, " in NASDAQ ", "| ", ticker, " | Time Elapsed: ", str(datetime.timedelta(seconds = round(end - start1))), \
             " | Cumulative Time Elapsed", str(datetime.timedelta(seconds = round(end - start)))) \
-            if selectorBit == 1 else print("Running ", counter, " of ", endVal - 1, " in NYSE ", "| Time Elapsed: ", str(datetime.timedelta(seconds = round(end - start1))), \
+            if selectorBit == 1 else print("Running ", counter, " of ", endVal - 1, " in NYSE ",  "| ", ticker, "| Time Elapsed: ", str(datetime.timedelta(seconds = round(end - start1))), \
             " | Cumulative Time Elapsed", str(datetime.timedelta(seconds = round(end - start))))
     print("NASDAQ Complete \n") if selectorBit == 1 else print("NYSE Complete \n")
     return rowIndecies, failedIndex
@@ -140,14 +140,14 @@ def dataSplitter(input):
     secondaryRetSet = list()
     highlow = findBackNumber(input[:indexLoc(input, 'Currency:')], 0 , True)
     secondaryRetSet.append(highlow)
+    # print(input)
 
     yearsTTM = findBackNumber(input[:indexLoc(input, 'Revenue')], 3 , True)
     secondaryRetSet.append(yearsTTM)
-
     delimiters2 = ['Earnings per share', 'FCF per share', 'Dividends per share', 'CAPEX per share', 'Book Value per sh.', 'Comm.Shares outs.'
-    , 'P/E to S&P500', 'Avg. annual div. yield', 'Revenue (m)', 'Operating margin', 'Depreciation (m)', 'Income tax rate', 'Working capital (m)', 'ROIC'
-    , 'Return on capital']
-    inputoffset2 = [0, 0, 0, 0, 0, 0, 13, 0, 0, 0, 0, 0, 0, 0, 0]
+    , 'P/E to S&P500', 'Avg. annual div. yield', 'Revenue (m)', 'Operating margin', 'Depreciation (m)', 'Net profit (m)', 'Net profit margin', 'Working capital (m)', 'ROIC'
+    , 'Return on capital', 'Return on equity', 'Plowback ratio', 'Div.&Repurch./FCF']
+    inputoffset2 = [0, 0, 0, 0, 0, 0, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     for i in range(len(delimiters2)):
         currVal = findBackNumber(input[:indexLoc(input, delimiters2[i])], 0 , True)
         secondaryRetSet.append(currVal)
