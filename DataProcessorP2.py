@@ -9,13 +9,14 @@ import pandas as pd
 wipeCurrVerNum, generateSheetToggle, useRevenueSheet = False, True, True
 
 def main():
-    global sheetNames, writeExcelFileName, rawDataBook, core1, rowIndecies, originalStart, revenueBook
+    global sheetNames, writeExcelFileName, rawDataBook, core1, rowIndecies, originalStart, revenueBook, revenueBookNew
     originalStart = time.time()
     print("Starting data processor...")
     writeExcelFileName = generateFileName() #We write to this
     rawDataFileName = findRawDataFileName()
     rawDataBook = openpyxl.load_workbook(rawDataFileName)#Pull data from this 
-    revenueBook = pd.ExcelFile("CoreExcelFiles/RevenueReference.xlsx")
+    revenueBookNew = pd.ExcelFile("CoreExcelFiles/RevenueReference.xlsx")
+    revenueBook = pd.ExcelFile("CoreExcelFiles/RevenueReference2.xlsx")
     coreName = "CoreExcelFiles/P2MasterTemplate6.2.23.xlsx"
     core1 = openpyxl.load_workbook(coreName)
     sheetNames = core1.sheetnames
@@ -34,8 +35,7 @@ def excelWriter():
     sheetCounter = 0;
     overallElementCounter = 1;
     for currSheet in sheetNames:
-        if not currSheet == 'ELIMINATED': #Use for testing otherwise write if not currSheet == 'ELIMINATED' Testing: currSheet == 'Miscellaneous'
-            revSheet = pd.read_excel(revenueBook, currSheet, header = 1)
+        if  not currSheet == 'ELIMINATED': #Use for testing otherwise write if not currSheet == 'ELIMINATED' Testing: currSheet == 'Miscellaneous'
             currSheetStartTime = time.time()
             prevSheetEndTime = originalStart
             elementCounter = 1
@@ -68,9 +68,14 @@ def excelWriter():
                             s2Data[i], continueRunning = series2Processor(s2Indecies[i - 1], s2ErrorNumStart, idNumStart, s2charSet[i - 1])
                         idNumStart += 1
                         s2ErrorNumStart += 1
+                    revSheet = pd.read_excel(revenueBook, currSheet, header = 1)
+                    revSheet2 = pd.read_excel(revenueBookNew, currSheet, header = 1)
                     #Tag this on for the last one
-                    extractedRev = revSheet[revSheet['Tick Symbol'] == row[1].value].to_numpy(None, False, None)                   
-                    if len(extractedRev) == 1 and continueRunning: 
+                    extractedRev = revSheet[revSheet['Tick Symbol'] == row[1].value].to_numpy(None, False, None)     
+                    extractedRevNew = revSheet2[revSheet2['Tick Symbol'] == row[1].value].to_numpy(None, False, None)
+                    if len(extractedRevNew) == 1 and continueRunning: 
+                        revenue = extractedRevNew[0][286:304]
+                    elif len(extractedRev) == 1 and continueRunning: 
                         #print(extractedRev[0][178:196] , "HEYa")
                         revenue = extractedRev[0][178:196]
                     elif continueRunning: 
@@ -351,9 +356,9 @@ def redFlagsS1(sheetName):
         performanceLength.append(len(removeNonNumeric(row[i].value, additionalSet)))
         if i == 5 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there PE
             return errorHandler(errorNum, sheetName)
-        if i == 5 and float(removeNonNumeric(row[i].value, additionalSet)) < -300: #PE Over 300
+        if i == 5 and float(removeNonNumeric(row[i].value, additionalSet)) < -325: #PE Under - 325
             return errorHandler(errorNum + 1, sheetName)
-        if i == 5 and float(removeNonNumeric(row[i].value, additionalSet)) > 350: #PE Under -100
+        if i == 5 and float(removeNonNumeric(row[i].value, additionalSet)) > 325: #PE Over 325
             return errorHandler(errorNum + 2, sheetName)
         if i == 8 and len(removeNonNumeric(row[i].value, additionalSet)) == 0: #Nothing is there MKTCAP
             return errorHandler(errorNum + 3, sheetName)
@@ -490,8 +495,8 @@ def writeToRecovery(toggle, versionNumber, wipeCurrVerNum):
 def getErrorCode(input):
     switch = {
         0: "E0: P/E Ratio is missing",
-        1: "E1: P/E Ratio is below the cutoff of -300",
-        2: "E2: P/E Ratio is above the cutoff of +350",
+        1: "E1: P/E Ratio is below the cutoff of -325",
+        2: "E2: P/E Ratio is above the cutoff of +325",
         3: "E3: Missing Market Cap Value",
         4: "E4: Missing Shares Shorted Value",
         5: "E5: Shares Shorted Value over 20 percent",

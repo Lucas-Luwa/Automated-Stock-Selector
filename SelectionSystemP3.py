@@ -2,7 +2,7 @@ import pandas as pd # I really wanted to call this catBear but will stay with no
 import numpy
 
 def main():
-
+    
     pass
 
 def getErrorCode(input):
@@ -11,7 +11,6 @@ def getErrorCode(input):
         1: "E1: P/E Ratio is below the cutoff of -100",
         2: "E2: P/E Ratio is above the cutoff of +300",
         3: "E3: Missing Market Cap Value",
-
         }
     return switch.get(input, "")
 
