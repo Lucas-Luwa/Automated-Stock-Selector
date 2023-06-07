@@ -15,11 +15,10 @@ core1 = openpyxl.load_workbook(sourcelocation)
 
 
 sheetNames = processedData.sheet_names
-stoppingIndecies = [702, 1220, 1053, 73, 45, 148, 175, 792, 261, 182, 1498, 68, 680]
 elimIndex = 2
 
 def main():
-    global currSheet, elimIndex
+    global currSheet, elimIndex, tempWorksheet
     for currSheet in sheetNames:
         sheetIndex = sheetNames.index(currSheet)
         currCounter = 0
@@ -51,6 +50,7 @@ def main():
                     tempWorksheet.cell(row = rowCounter, column = rev2Sheet.columns.get_loc('Country') + 1).value = corpCountry
                     tempWorksheet.cell(row = rowCounter, column = rev2Sheet.columns.get_loc('IPO Year') + 1).value = ipoYR
                     tempWorksheet.cell(row = rowCounter, column = rev2Sheet.columns.get_loc('Exchange') + 1).value = corpEX
+                    writeSeriesToExcel("REV")
                 # print("XX")
                     rowCounter += 1
 
@@ -59,6 +59,7 @@ def main():
 
     # writeTo._save
     # writeTo.close()  
+def writeSeriesToExcel(series, tag):
 
 def revProcessor(row):
     revErr = 100
