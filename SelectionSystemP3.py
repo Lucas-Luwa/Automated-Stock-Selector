@@ -1,4 +1,4 @@
-import pandas as pd # I really wanted to call this catBear but will stay with normal naming conventions...iykyk ;)
+import pandas as pd # I really wanted to call this catBear but will stick with normal naming conventions...iykyk ;)
 import openpyxl
 import time
 import datetime
