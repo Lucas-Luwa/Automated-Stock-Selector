@@ -1,7 +1,8 @@
-rowIndecies: [702, 1220, 1053, 73, 45, 148, 175, 792, 261, 182, 1498, 68, 680]
-failedIndex: 750
+rowIndecies: [701, 1210, 1045, 71, 45, 147, 174, 785, 260, 182, 1492, 68, 678]
+failedIndex: 789
 Last successful Ticker: ZWS
 Current Exchange: NYSE
-Month/Year: June2023
+Month/Year: July2023
 VersionNumber: 0
-Updated: 2023-06-03
+Updated: 2023-07-12
+DataProcessVersion: 1
