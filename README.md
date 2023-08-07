@@ -6,7 +6,7 @@ https://lucasluwa.com/Projects/Individual/Stonks/Stocks
 
 Project Overview:
 This project is split into three parts. All parts rely on master spreadsheets and include automatic file naming systems when generating files/folders
-- Part 1: Webscraper using BeautifulSoup to pull information on 6000+ stocks on the NASDAQ and NYSE. All the raw data is split apart and added to an excel spreadsheet. 
+- Part 1: Webscraper using BeautifulSoup to pull information on 6000+ stocks on the NASDAQ and NYSE. All the raw data is split apart and added to an excel spreadsheet. A recovery system has also been added in the event that a problem occurs during the scraping process. This allows users to resume processing at a certain spot.
 - Part 2: This part of the project takes the raw data from part 1 and splits the data into meaningful segments of data. 
 - Part 3: This stage performs statistical analysis on the data and eliminates stocks based on a predefined criteria. Stocks that make it through this stage are added to the final excel spreadsheet. A template is provided for this part of the project for those that are interested in replicating the project.
 
