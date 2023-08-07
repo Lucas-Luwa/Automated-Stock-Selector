@@ -1,0 +1,269 @@
+from scipy import stats
+import math
+from statsmodels.stats.weightstats import DescrStatsW
+import openpyxl
+import time
+import datetime
+import numpy as np
+import math
+import pandas as pd
+import openpyxl
+import shutil
+import yfinance as yf
+import statistics
+
+# This is intended to be a reference for those that may be interested in replicating this project.
+# This is not a complete file and has many sections unimplemented
+
+
+#Replace file locations with ones for your project.
+sourcelocation = "Templates/P3MasterTemplate6.7.23.xlsx"
+destinationlocation = "Part3V1.xlsx"
+shutil.copy(sourcelocation, destinationlocation)
+processedData = pd.ExcelFile("../../../Documents/Github/Automated-Stock-Selector/ProcessedSheets/June2023/ProcessedDataV2.xlsx")
+writeTo = pd.ExcelWriter(destinationlocation)
+core1 = openpyxl.load_workbook(sourcelocation)
+
+
+sheetNames = processedData.sheet_names
+stoppingIndecies = [702, 1220, 1053, 73, 45, 148, 175, 792, 261, 182, 1498, 68, 680]
+elimIndex = 2
+series1Values = [""] * (20)
+list = []
+
+#Example keywords array is shown below
+s1keywords = ['L/A Ratio', '# FT Workers', 'Enterprise Val.', 'Company Name', 'Tick Symbol', 'Country', 'IPO Year','Exchange',
+    'Rev/FTE', 'Daily Trade', '52 Low', '52 High', 'PEG', 'BETA', '% Institution', '% Insider', 'Dividend', 'MKT Cap', 'MKTC Size',
+    'Current P/E']
+
+def main():
+    global originalStart
+    print("Starting Analysis...")
+    originalStart = time.time()
+    writer()
+    end = time.time()
+    elapsed = round(end - originalStart)
+    print("Total Time Elapsed: ", str(datetime.timedelta(seconds = elapsed)))
+
+def writer():
+    global currSheet, elimIndex, tempWorksheet, rowCounter, rev2Sheet
+    sheetCounter = 0;
+    overallElementCounter = 1;
+    for currSheet in sheetNames:
+        #print("HI")
+        sheetIndex = sheetNames.index(currSheet)
+        currCounter = 0
+        rowCounter = 3
+        tempWorksheet = core1[currSheet]  
+        if not currSheet == 'ELIMINATED': #not currSheet == 'ELIMINATED'
+            #Add processor code here. Don't forget to save your excel file!
+            pass
+
+#Statistics calculator with Yeo-Johnson
+def statsCalculator(epsVal, series, elemInQuestion):
+    if epsVal != None:
+        series = series.copy()[1:]
+    series = elimOutliersAndNeg(series)
+    if epsVal != None:
+        elemInQuestion = elemInQuestion/epsVal
+    # Start off with the Yeo-Johnson
+    if len(series)<=5: 
+        return 0, "ERROR"
+    retV, lbda = stats.yeojohnson(series)
+    currV = stats.yeojohnson(elemInQuestion, lbda)
+    if len(retV) <= 1: 
+        return 0, "ERROR"
+    yjZScore = 1 - stats.norm.cdf(zScore(currV, statistics.mean(retV), statistics.stdev(retV)))
+
+    #Weights method
+    wght = []
+    for i in range (1, len(series)+1):
+        wght.append(i)
+    wght.reverse()
+    mydev = DescrStatsW(series, weights=wght, ddof=1).std
+    mymean = np.average(series, weights = wght)
+    weightZScore = 1 - stats.norm.cdf(zScore(elemInQuestion, mymean, mydev))
+    if elemInQuestion < 0: return 0, "DQ"
+    elif weightZScore > yjZScore or epsVal != None: return weightZScore, "W"
+    else: return yjZScore, "YJ"
+
+def getFirstValid(series):
+    for i in range (0, len(series)):
+        if series[i] > 0 and not series[i] == None:
+            return series[i]
+
+def elimOutliersAndNeg(series):
+    retVal = []
+    Q3, Q1 = np.percentile(series, [75 ,25])
+    IQR = Q3 - Q1
+    median = np.median(series)
+    for i in range(0, len(series)):
+        if series[i] > (median - 2.5 * IQR) and series[i] < (median + 2.5 * IQR) and series[i] > 0:
+            retVal.append(series[i])
+    return retVal
+
+def zScore(val, mean, stdDev):   
+    return (val - mean)/stdDev
+
+def getYHVal(ticker, currRow):
+    probFlag = False
+    tick = yf.Ticker(ticker)
+    allData = tick.info
+    tdData = tick.history(period='1d')
+    #Grab information we need
+    currPrice = allData['currentPrice']
+    fiftyTwoHigh = allData['fiftyTwoWeekHigh']
+    fiftyTwoLow = allData['fiftyTwoWeekLow']
+    rawBookVal = allData['bookValue']
+    yearGrowthRanking = equationSelector(fiftyTwoPotential(fiftyTwoHigh, fiftyTwoLow, currPrice), -200, 4, -200)
+    try:
+        revPShare = allData['revenuePerShare']
+        currPS = currPrice/revPShare
+    except:
+        probFlag = True
+    currPBV = currPrice/rawBookVal
+    if probFlag: return [None, None, currPrice, currPBV, yearGrowthRanking]
+    else: return [currPS, None, currPrice, currPBV, yearGrowthRanking]
+
+
+def convertToNum(input):
+    input = input.strip()
+    if input[0] == '(':
+        input = -1 * int(input[1:len(input) - 1])
+    return input
+
+def equationSelector(input, index, eqnSelector, numberEle):
+    #Some example equations are shown below
+    if eqnSelector in [3, 4, 5, 6,7] and input > 75:
+        return 1
+    elif eqnSelector == 1:
+        return math.exp(-0.25 *index) * input
+
+def writeSeriesToExcel(series, tag):
+    keyword = ""
+    counter = 23
+    for i in range (0, len(series) - 1):
+        if i == 0: keyword = "TTM" + tag
+        else: keyword = str(counter) + tag
+        tempWorksheet.cell(row = rowCounter, column = rev2Sheet.columns.get_loc(keyword) + 1).value = series[i]
+        if i != 0: counter-=1
+
+
+def decimalProcessor(row, start, end, flag):
+    revErr = 50
+    arr = row.copy()
+    arr = replw0(arr[start:end], 0, True)
+    if np.count_nonzero(arr) < 2: return None, errorHandler(revErr, row)
+    elif arr[2] == 0: return None, errorHandler(revErr + 1, currRow=row)
+    elif arr[0] == arr[1] == arr[2] == 0: return None, errorHandler(revErr + 2, row)
+    else:
+        lastInd = 2
+        offsetbit = 0
+        if arr[0] != 0 or arr[1] != 0: arr[1] = round(percentChange(max(abs(arr[0]), abs(arr[1])), arr[2], flag),3); offsetbit = 1
+        for i in range(3, len(arr)):
+            if arr[i] != 0 and (arr[i] < 0.1 and arr[i] > -0.1):
+                arr[i] = 0
+            elif arr[i] != 0 and not (arr[i] < 0.1 and arr[i] > -0.1):
+                arr[lastInd] = round(percentChange(arr[lastInd], arr[i], flag),3,)
+                lastInd = i
+            if arr[i] > 1000 or arr[i] < -1000: return errorHandler(revErr + 3, row), None
+        arr[lastInd] = 0
+    if np.count_nonzero(arr) < 3: return None, errorHandler(revErr + 4, row)
+    if offsetbit == 0: return arr[2:], True
+    else: return arr[1:], True
+
+
+def percentChange(final, initial, flag):
+    if flag == 0: return (final - initial)/initial * 100
+    else: return final - initial
+
+def replw0(arr, element, convertToNum):
+    for i in range (0, len(arr)):
+        if arr[i] == -100000 or arr[i] == '{0}' or arr[i] == None:
+            arr[i] = element
+        elif convertToNum and type(arr[i]) is str and '(' in arr[i] and ')' in arr[i]:
+            arr[i] = -1 * float(removeNonNumeric(arr[i],'.'))
+            # arr[i] = -1 * float(arr[i][1:len(arr[i]) - 1])
+        elif convertToNum:
+            if type(arr[i]) is str: arr[i] = float(removeNonNumeric(arr[i], ['.']))
+            else: arr[i] = float(arr[i])
+    return arr
+
+def mktSize(input):
+    designation = input[len(input)-1]
+    value = float(input[0:len(input) - 1])
+    if designation == 'T' or designation == 'B' and value >= 200.0: return "Mega"
+    elif designation == 'B' and value >= 10.0: return "Large"
+    elif designation == 'B' and value >= 2.0: return "Medium"
+    elif designation == 'B' and value < 2.0 or designation == 'M' and value >= 250.0: return "Small"
+    else: return "X"
+
+
+def errorHandler(flag, currRow):
+    global elimIndex
+    currRow = replw0(currRow, None, False)
+    tempWKST = core1['ELIMINATED']
+    flagComment = getErrorCode(flag)
+    for i in range(1,7):
+        x = i
+        if i == 5: 
+            tempWKST.cell(row = elimIndex, column = i).value = currSheet
+        else:
+            if i > 5: x -= 1
+            tempWKST.cell(row = elimIndex, column = i).value = currRow[x - 1]
+    tempWKST.cell(row = elimIndex, column = 7).value = flagComment
+    core1.save(destinationlocation)
+    elimIndex += 1
+    return False;
+
+def removeNonNumeric(input, additionalSet):
+    output = ""
+    approvedSet = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+    counter = 0
+    for i in range(0, len(input)):
+        if (input[i] in approvedSet):
+            counter += 1
+            output+= input[i]
+        if (input[i] in additionalSet):
+            output+= input[i]
+    if counter == 0: return ""
+    return output
+
+def spaceAdder(tick):
+    tickOffset = 6 - len(str(tick))
+    output = ""
+    output += ' ' * tickOffset
+    return output
+
+def getErrorCode(input):
+    switch = {
+        0: "E0: Daily Volume Less Than 1/2 Million",
+        1: "E1: Liabilities to Assets Ratio is Over 2.0",
+        2: "E2: Assets is zero -> Divide by 0 Error",
+
+        50: "E50: Less than 3 valid RPS/EPS/FCF/BV entries",
+        51: "E51: 2022 RPS/EPS/FCF/BV Missing",
+        52: "E52: First 3 RPS/EPS/FCF/BV values are all missing or 0",
+        53: "E53: Ridiculous RPS/EPS/FCF/BV Value",
+        54: "E54: Total Final RPS/EPS/FCF/BV Values < 3",
+
+        60: "E60: Less than 3 valid percentage entries",
+        61: "E61: 2022 percentage value Missing",
+        62: "E62: First 3 percentage are all missing or 0",
+        63: "E63: Ridiculous % Value",
+        64: "E64: Total Final % Values < 3",
+
+        100: "E100: Less than 2 valid revenue entries",
+        101: "E101: 2022 Revenue Missing",
+        102: "E102: First 3 revenue values are all missing or 0",
+        103: "E103: Revenue average is below $50 Million ",
+        104: "E104: Absurd Revenue value",
+
+        150: "E150: LA Ratio over 2.0",
+        404: "404: HOUSTON, WE GOT A PROB",
+
+        }
+    return switch.get(input, "")
+
+if __name__ == '__main__':
+    main()
