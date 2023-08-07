@@ -1,7 +1,7 @@
 import yfinance as yf
 import sys
 
-def get_current_price(ticker):
+def main(ticker):
     tick = yf.Ticker(ticker)
     tdData = tick.history(period='1d')
     return tdData['Close'][0]
@@ -9,14 +9,4 @@ def get_current_price(ticker):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        method_name = sys.argv[1]
-        if method_name == "":
-            result = 
-        elif method_name == "":
-            result = 
-        else:
-            result = "Invalid method name"
-        print(result)
-    else:
-        print("No method name provided")
+    main
