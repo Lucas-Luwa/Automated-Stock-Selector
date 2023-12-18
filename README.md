@@ -1,6 +1,6 @@
 # Automated-Stock-Selector
 
-This stock selection and ranking software is a python based project that leverages uses webscraping, mathematical analysis and financial information to eliminate and rank stocks within each sector. For more information about this project, please feel free to visit my website:
+This stock selection and ranking software is a python project that leverages webscraping, mathematical analysis and financial information to filter and rank stocks within each sector. For more information about this project, please visit my website:
 
 https://lucasluwa.com/Projects/Individual/Stonks/Stocks
 
